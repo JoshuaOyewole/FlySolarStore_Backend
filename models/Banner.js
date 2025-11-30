@@ -40,6 +40,6 @@ const bannerSchema = new mongoose.Schema({
 });
 
 // Indexes
-bannerSchema.index({ order: 1 });
+//bannerSchema.index({ order: 1 });
 
 module.exports = mongoose.model('Banner', bannerSchema);
