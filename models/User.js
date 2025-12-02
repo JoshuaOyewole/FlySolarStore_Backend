@@ -35,6 +35,9 @@ const userSchema = new mongoose.Schema({
     type: String,
     enum: ['male', 'female', 'other']
   },
+  dateOfBirth: {
+    type: Date
+  },
   avatar: {
     public_id: String,
     url: String
@@ -83,11 +86,12 @@ userSchema.virtual('fullName').get(function() {
 });
 
 // Pre-save middleware to hash password
-userSchema.pre('save', async function(next) {
-  if (!this.isModified('password')) return next();
+userSchema.pre('save', async function() {
+  if (!this.isModified('password')) {
+    return;
+  }
   
   this.password = await bcrypt.hash(this.password, 12);
-  next();
 });
 
 // Instance method to check password
