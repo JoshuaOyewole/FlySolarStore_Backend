@@ -65,7 +65,7 @@ const register = catchAsync(async (req, res, next) => {
   try {
     await sendEmail({
       to: user.email,
-      subject: 'Email Verification - Bazaar',
+      subject: 'Email Verification - FlySolarStore',
       template: 'emailVerification',
       data: {
         name: user.firstName,
@@ -187,7 +187,7 @@ const forgotPassword = catchAsync(async (req, res, next) => {
   try {
     await sendEmail({
       to: user.email,
-      subject: 'Password Reset - Bazaar',
+      subject: 'Password Reset - FlySolarStore',
       template: 'passwordReset',
       data: {
         name: user.firstName,

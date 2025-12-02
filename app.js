@@ -1,5 +1,4 @@
 const express = require("express");
-const mongoose = require('mongoose');
 const cors = require('cors');
 const helmet = require('helmet'); 
 const morgan = require('morgan');
@@ -15,6 +14,7 @@ const homepageRoutes = require('./routes/homepageRoutes');
 const productRoutes = require('./routes/productRoutes');
 const blogRoutes = require('./routes/blogRoutes');
 const serviceRoutes = require('./routes/serviceRoutes');
+const orderRoutes = require('./routes/orderRoutes');
 
 const app = express();
 
@@ -51,6 +51,7 @@ app.use('/api/homepage', homepageRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/blogs', blogRoutes);
 app.use('/api/services', serviceRoutes);
+app.use('/api/orders', orderRoutes);
 
 
 // 404 Handler - Must come before error handler
@@ -67,7 +68,7 @@ app.use(errorHandler);
 const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, () => {
-  console.log(`🚀 Bazaar Backend Server running on port ${PORT}`);
+  console.log(`🚀 FlySolarStore Backend Server running on port ${PORT}`);
   console.log(`📡 API Base URL: http://localhost:${PORT}/api`);
 });
 

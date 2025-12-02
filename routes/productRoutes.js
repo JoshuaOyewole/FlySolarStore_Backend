@@ -5,10 +5,16 @@ const {
   getJustForYou,
   getNewArrivals,
   getFeaturedProducts,
+  getFeaturedGridProducts,
   getProductsByCategory,
   getProduct,
-  searchProducts
+  searchProducts,
+  getAllProducts,
+  getRelatedProducts
 } = require('../controllers/productController');
+
+// GET /api/products - Get all products with filters
+router.get('/', getAllProducts);
 
 // GET /api/products/flash-deals
 router.get('/flash-deals', getFlashDeals);
@@ -22,13 +28,19 @@ router.get('/new-arrivals', getNewArrivals);
 // GET /api/products/featured
 router.get('/featured', getFeaturedProducts);
 
+// GET /api/products/featured-grid
+router.get('/featured-grid', getFeaturedGridProducts);
+
 // GET /api/products/search
 router.get('/search', searchProducts);
 
 // GET /api/products/category/:category
 router.get('/category/:category', getProductsByCategory);
 
-// GET /api/products/:id
-router.get('/:id', getProduct);
+// GET /api/products/:identifier/related - Must be before /:identifier
+router.get('/:identifier/related', getRelatedProducts);
+
+// GET /api/products/:identifier (ID or slug)
+router.get('/:identifier', getProduct);
 
 module.exports = router;

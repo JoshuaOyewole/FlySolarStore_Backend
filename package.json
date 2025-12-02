@@ -1,5 +1,5 @@
 {
-  "name": "bazaar-backend",
+  "name": "FlySolarStoreBackend",
   "version": "1.0.0",
   "description": "Backend API for FlySolarStore E-commerce Platform",
   "main": "app.js",
