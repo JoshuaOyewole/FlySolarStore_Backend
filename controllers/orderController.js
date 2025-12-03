@@ -5,9 +5,9 @@ const { sendOrderConfirmation } = require('../utils/email');
 
 // @desc    Create new order
 // @route   POST /api/orders
-// @access  Public (can be protected later)
+// @access  Public
 exports.createOrder = catchAsync(async (req, res, next) => {
-  const { items, shippingAddress, billingAddress, sameAsShipping } = req.body;
+  const { items, shippingAddress, billingAddress, sameAsShipping, userId } = req.body;
 
   // Validation
   if (!items || items.length === 0) {
@@ -22,12 +22,13 @@ exports.createOrder = catchAsync(async (req, res, next) => {
     return next(new AppError('Billing address is required', 400));
   }
 
-  // Create order
+  // Create order with optional user association
   const order = await orderService.createOrder({
     items,
     shippingAddress,
     billingAddress,
-    sameAsShipping: sameAsShipping || false
+    sameAsShipping: sameAsShipping || false,
+    userId: userId || null // Associate with user if provided
   });
 
   // Send invoice email
@@ -71,9 +72,35 @@ exports.getOrder = catchAsync(async (req, res, next) => {
   });
 });
 
-// @desc    Get user orders
-// @route   GET /api/orders/user/:userId
+// @desc    Get authenticated user's orders with pagination
+// @route   GET /api/orders/my-orders
 // @access  Private (requires authentication)
+exports.getMyOrders = catchAsync(async (req, res, next) => {
+  const userId = req.user._id;
+  const page = parseInt(req.query.page) || 1;
+  const limit = parseInt(req.query.limit) || 10;
+  const skip = (page - 1) * limit;
+
+  const { orders, total } = await orderService.getUserOrdersWithPagination(userId, { skip, limit });
+
+  res.status(200).json({
+    success: true,
+    data: {
+      orders,
+      pagination: {
+        currentPage: page,
+        totalPages: Math.ceil(total / limit),
+        totalOrders: total,
+        hasNextPage: page < Math.ceil(total / limit),
+        hasPrevPage: page > 1
+      }
+    }
+  });
+});
+
+// @desc    Get user orders (admin)
+// @route   GET /api/orders/user/:userId
+// @access  Private (admin only)
 exports.getUserOrders = catchAsync(async (req, res, next) => {
   const { userId } = req.params;
   const { status } = req.query;

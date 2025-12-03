@@ -287,6 +287,54 @@ const updatePassword = catchAsync(async (req, res, next) => {
   sendTokenResponse(user, 200, res);
 });
 
+// @desc    Verify email
+// @route   GET /api/auth/verify-email
+// @access  Public
+const verifyEmail = catchAsync(async (req, res, next) => {
+  const { token } = req.query;
+
+  if (!token) {
+    return next(new AppError("Verification token is required", 400));
+  }
+
+  // Find user with matching token
+  const user = await User.findOne({ emailVerificationToken: token });
+
+  if (!user) {
+    return next(new AppError("Invalid or expired verification token", 400));
+  }
+
+  // Check if already verified
+  if (user.isEmailVerified) {
+    return res.status(200).json({
+      success: true,
+      message: "Email already verified",
+      data: {
+        user: {
+          email: user.email,
+          isEmailVerified: user.isEmailVerified
+        }
+      }
+    });
+  }
+
+  // Mark email as verified
+  user.isEmailVerified = true;
+  user.emailVerificationToken = undefined;
+  await user.save();
+
+  res.status(200).json({
+    success: true,
+    message: "Email verified successfully",
+    data: {
+      user: {
+        email: user.email,
+        isEmailVerified: user.isEmailVerified
+      }
+    }
+  });
+});
+
 // @desc    Update user profile
 // @route   PUT /api/auth/update-profile
 // @access  Private
@@ -331,6 +379,7 @@ module.exports = {
   login,
   logout,
   getMe,
+  verifyEmail,
   forgotPassword,
   resetPassword,
   updatePassword,

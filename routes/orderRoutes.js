@@ -4,23 +4,30 @@ const {
   createOrder,
   getOrder,
   getUserOrders,
+  getMyOrders,
   updateOrderStatus,
   resendInvoice
 } = require('../controllers/orderController');
+const { authenticate, authorize } = require('../middleware/auth');
 
+// Public routes
 // POST /api/orders - Create new order
 router.post('/', createOrder);
 
+// Protected routes (require authentication)
+// GET /api/orders/my-orders - Get authenticated user's orders with pagination
+router.get('/my-orders', authenticate, getMyOrders);
+
+// GET /api/orders/user/:userId - Get user's orders (admin)
+router.get('/user/:userId', authenticate, authorize('admin'), getUserOrders);
+
 // GET /api/orders/:identifier - Get order by ID or order number
-router.get('/:identifier', getOrder);
+router.get('/:identifier', authenticate, getOrder);
 
-// GET /api/orders/user/:userId - Get user's orders
-router.get('/user/:userId', getUserOrders);
-
-// PATCH /api/orders/:id/status - Update order status
-router.patch('/:id/status', updateOrderStatus);
+// PATCH /api/orders/:id/status - Update order status (admin)
+router.patch('/:id/status', authenticate, authorize('admin'), updateOrderStatus);
 
 // POST /api/orders/:id/resend-invoice - Resend invoice email
-router.post('/:id/resend-invoice', resendInvoice);
+router.post('/:id/resend-invoice', authenticate, resendInvoice);
 
 module.exports = router;

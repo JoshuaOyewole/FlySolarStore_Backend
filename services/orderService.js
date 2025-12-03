@@ -3,7 +3,7 @@ const Product = require('../models/Product');
 
 class OrderService {
   async createOrder(orderData) {
-    const { items, shippingAddress, billingAddress, sameAsShipping } = orderData;
+    const { items, shippingAddress, billingAddress, sameAsShipping, userId } = orderData;
 
     // Validate and enrich items with product data
     const enrichedItems = await Promise.all(
@@ -57,7 +57,7 @@ class OrderService {
     const total = subtotal + tax + shippingCost;
 
     // Create order
-    const order = new Order({
+    const orderObj = {
       items: enrichedItems,
       shippingAddress: {
         name: shippingAddress.name,
@@ -89,7 +89,14 @@ class OrderService {
       total,
       status: 'pending',
       paymentStatus: 'pending'
-    });
+    };
+
+    // Associate with user if userId provided
+    if (userId) {
+      orderObj.user = userId;
+    }
+
+    const order = new Order(orderObj);
 
     await order.save();
 
@@ -132,6 +139,27 @@ class OrderService {
       .lean();
 
     return orders;
+  }
+
+  async getUserOrdersWithPagination(userId, options = {}) {
+    const { skip = 0, limit = 10, status } = options;
+    const query = { user: userId };
+
+    if (status) {
+      query.status = status;
+    }
+
+    const [orders, total] = await Promise.all([
+      Order.find(query)
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit)
+        .populate('items.product', 'title slug thumbnail price discount')
+        .lean(),
+      Order.countDocuments(query)
+    ]);
+
+    return { orders, total };
   }
 
   async updateOrderStatus(orderId, status) {
