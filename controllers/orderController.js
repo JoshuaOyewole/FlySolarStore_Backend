@@ -49,7 +49,7 @@ exports.createOrder = catchAsync(async (req, res, next) => {
 
 // @desc    Get order by ID or order number
 // @route   GET /api/orders/:identifier
-// @access  Public (should be protected in production)
+// @access  Public (for order confirmation viewing)
 exports.getOrder = catchAsync(async (req, res, next) => {
   const { identifier } = req.params;
 

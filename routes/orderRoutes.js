@@ -21,8 +21,8 @@ router.get('/my-orders', authenticate, getMyOrders);
 // GET /api/orders/user/:userId - Get user's orders (admin)
 router.get('/user/:userId', authenticate, authorize('admin'), getUserOrders);
 
-// GET /api/orders/:identifier - Get order by ID or order number
-router.get('/:identifier', authenticate, getOrder);
+// GET /api/orders/:identifier - Get order by ID or order number (Public access for order confirmation)
+router.get('/:identifier', getOrder);
 
 // PATCH /api/orders/:id/status - Update order status (admin)
 router.patch('/:id/status', authenticate, authorize('admin'), updateOrderStatus);
