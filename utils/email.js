@@ -185,14 +185,14 @@ const sendEmail = async ({ to, subject, template, data }) => {
               body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #1f2937; margin: 0; padding: 0; background-color: #f3f4f6; }
               .email-wrapper { background-color: #f3f4f6; padding: 40px 20px; }
               .email-container { max-width: 650px; margin: 0 auto; background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07); }
-              .header { background: linear-gradient(135deg, #7c3aed 0%, #a855f7 100%); padding: 40px 30px; text-align: center; color: #ffffff; }
+              .header { background: #cc5500; padding: 40px 30px; text-align: center; color: #ffffff; }
               .header h1 { margin: 0 0 8px 0; font-size: 28px; font-weight: 700; }
               .header p { margin: 0; font-size: 14px; opacity: 0.95; }
               .status-badge { display: inline-block; background-color: #fef3c7; color: #92400e; padding: 8px 16px; border-radius: 20px; font-size: 13px; font-weight: 600; margin: 20px 0; }
               .content { padding: 40px 30px; }
               .greeting { font-size: 18px; font-weight: 600; color: #111827; margin: 0 0 20px 0; }
               .message { color: #4b5563; font-size: 15px; line-height: 1.7; margin: 0 0 30px 0; }
-              .payment-box { background: linear-gradient(to bottom right, #ede9fe, #f3e8ff); border-left: 4px solid #7c3aed; padding: 24px; border-radius: 8px; margin: 30px 0; }
+              .payment-box { background: linear-gradient(to bottom right, #ede9fe, #f3e8ff); border-left: 4px solid #cc5500; padding: 24px; border-radius: 8px; margin: 30px 0; }
               .payment-box h3 { margin: 0 0 16px 0; font-size: 18px; font-weight: 700; color: #111827; }
               .bank-details { background-color: #ffffff; padding: 20px; border-radius: 6px; margin: 16px 0; }
               .bank-details p { margin: 0 0 12px 0; font-size: 14px; color: #374151; }
@@ -200,7 +200,7 @@ const sendEmail = async ({ to, subject, template, data }) => {
               .detail-row { display: flex; justify-content: space-between; padding: 8px 0; font-size: 14px; }
               .detail-label { color: #6b7280; }
               .detail-value { color: #111827; font-weight: 600; }
-              .cta-button { display: inline-block; background-color: #7c3aed; color: #ffffff; padding: 12px 28px; border-radius: 6px; text-decoration: none; font-weight: 600; margin: 20px 0; }
+              .cta-button { display: inline-block; background-color: #cc5500; color: #ffffff; padding: 12px 28px; border-radius: 6px; text-decoration: none; font-weight: 600; margin: 20px 0; }
               .invoice-section { margin: 30px 0; }
               .section-title { font-size: 20px; font-weight: 700; color: #111827; margin: 0 0 16px 0; padding-bottom: 8px; border-bottom: 2px solid #e5e7eb; }
               .order-info { background-color: #f9fafb; padding: 16px; border-radius: 6px; margin-bottom: 20px; }
@@ -224,7 +224,7 @@ const sendEmail = async ({ to, subject, template, data }) => {
               .address-name { font-weight: 600; color: #111827; margin-bottom: 4px; }
               .footer { background-color: #f9fafb; padding: 30px; text-align: center; border-top: 1px solid #e5e7eb; }
               .footer p { margin: 8px 0; color: #6b7280; font-size: 13px; line-height: 1.6; }
-              .footer a { color: #7c3aed; text-decoration: none; font-weight: 600; }
+              .footer a { color: #cc5500; text-decoration: none; font-weight: 600; }
               .highlight { background-color: #fef3c7; padding: 2px 6px; border-radius: 3px; }
               @media only screen and (max-width: 600px) {
                 .email-wrapper { padding: 20px 10px; }
@@ -269,11 +269,11 @@ const sendEmail = async ({ to, subject, template, data }) => {
                     <h3>💳 Payment Instructions</h3>
                     <p style="margin: 0 0 16px 0; color: #6b7280; font-size: 14px; line-height: 1.6;">
                       Please transfer the total amount to the account below and send your payment receipt to 
-                      <a href="tel:08167360193" style="color: #7c3aed; text-decoration: none; font-weight: 600;">08167360193</a> via WhatsApp or SMS.
+                      <a href="tel:08167360193" style="color: #cc5500; text-decoration: none; font-weight: 600;">08167360193</a> via WhatsApp or SMS.
                     </p>
                     
                     <div class="bank-details">
-                      <p style="margin: 0 0 16px 0; font-size: 15px; font-weight: 700; color: #7c3aed;">
+                      <p style="margin: 0 0 16px 0; font-size: 15px; font-weight: 700; color: #cc5500;">
                         FLY SOLAR STORE NG LIMITED
                       </p>
                       <div class="detail-row">
@@ -286,7 +286,7 @@ const sendEmail = async ({ to, subject, template, data }) => {
                       </div>
                       <div class="detail-row" style="border-top: 1px solid #e5e7eb; margin-top: 12px; padding-top: 12px;">
                         <span class="detail-label">Amount to Pay:</span>
-                        <span class="detail-value" style="font-size: 18px; color: #7c3aed;">₦${data.total.toLocaleString('en-NG', { minimumFractionDigits: 2 })}</span>
+                        <span class="detail-value" style="font-size: 18px; color: #cc5500;">₦${data.total.toLocaleString('en-NG', { minimumFractionDigits: 2 })}</span>
                       </div>
                     </div>
                   </div>
@@ -346,10 +346,10 @@ const sendEmail = async ({ to, subject, template, data }) => {
                       <div>${data.billingAddress.state || 'Akwa Ibom'}</div>
                       <div>${data.billingAddress.country.label || 'Nigeria'}</div>
                       <div style="margin-top: 8px;">
-                        <a href="tel:${data.billingAddress.contact}" style="color: #7c3aed; text-decoration: none;">${data.billingAddress.contact}</a>
+                        <a href="tel:${data.billingAddress.contact}" style="color: #cc5500; text-decoration: none;">${data.billingAddress.contact}</a>
                       </div>
                       <div>
-                        <a href="mailto:${data.billingAddress.email}" style="color: #7c3aed; text-decoration: none;">${data.billingAddress.email}</a>
+                        <a href="mailto:${data.billingAddress.email}" style="color: #cc5500; text-decoration: none;">${data.billingAddress.email}</a>
                       </div>
                     </div>
                   </div>
