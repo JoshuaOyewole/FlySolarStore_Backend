@@ -147,20 +147,21 @@ const sendEmail = async ({ to, subject, template, data }) => {
     else if (template === 'orderConfirmation') {
       const itemsHtml = data.items.map(item => `
         <tr>
-          <td style="padding: 15px 10px; border-bottom: 1px solid #e5e7eb;">
-            <div style="display: flex; align-items: center; gap: 10px;">
-              <div style="width: 50px; height: 50px; background-color: #f3f4f6; border-radius: 4px; display: flex; align-items: center; justify-content: center;">
-                <span style="font-size: 24px;">📦</span>
+          <td class="item-name">
+            <div style="display: flex; align-items: center; gap: 12px;">
+              <div style="width: 48px; height: 48px; background: linear-gradient(135deg, #ede9fe 0%, #f3e8ff 100%); border-radius: 6px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                <span style="font-size: 22px;">⚡</span>
               </div>
               <div>
-                <div style="font-weight: 500; color: #111827;">${item.productSnapshot.title}</div>
+                <div style="font-weight: 600; color: #111827; margin-bottom: 2px;">${item.productSnapshot.title}</div>
+                <div style="font-size: 12px; color: #9ca3af;">SKU: ${item.productSnapshot._id || 'N/A'}</div>
               </div>
             </div>
           </td>
-          <td style="padding: 15px 10px; border-bottom: 1px solid #e5e7eb; text-align: center; color: #374151;">
-            ×${item.quantity}
+          <td class="item-qty">
+            <span style="background-color: #f3f4f6; padding: 4px 12px; border-radius: 12px; font-weight: 600;">×${item.quantity}</span>
           </td>
-          <td style="padding: 15px 10px; border-bottom: 1px solid #e5e7eb; text-align: right; font-weight: 600; color: #111827;">
+          <td class="item-price">
             ₦${item.subtotal.toLocaleString('en-NG', { minimumFractionDigits: 2 })}
           </td>
         </tr>
@@ -171,115 +172,200 @@ const sendEmail = async ({ to, subject, template, data }) => {
       let shippingLocation = '';
       if (data.shippingCost === 0 || data.shippingCost < 10000) {
         shippingMethodText = 'Shipping: Pickup (LAGOS)';
-        shippingLocation = 'Lagos - Ikeja Pickup location';
+       /*  shippingLocation = 'Lagos - Alaba International Market'; */
       }
 
       html = `
         <!DOCTYPE html>
         <html>
           <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
             <style>
-              body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #374151; margin: 0; padding: 0; }
+              body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #1f2937; margin: 0; padding: 0; background-color: #f3f4f6; }
+              .email-wrapper { background-color: #f3f4f6; padding: 40px 20px; }
+              .email-container { max-width: 650px; margin: 0 auto; background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07); }
+              .header { background: linear-gradient(135deg, #7c3aed 0%, #a855f7 100%); padding: 40px 30px; text-align: center; color: #ffffff; }
+              .header h1 { margin: 0 0 8px 0; font-size: 28px; font-weight: 700; }
+              .header p { margin: 0; font-size: 14px; opacity: 0.95; }
+              .status-badge { display: inline-block; background-color: #fef3c7; color: #92400e; padding: 8px 16px; border-radius: 20px; font-size: 13px; font-weight: 600; margin: 20px 0; }
+              .content { padding: 40px 30px; }
+              .greeting { font-size: 18px; font-weight: 600; color: #111827; margin: 0 0 20px 0; }
+              .message { color: #4b5563; font-size: 15px; line-height: 1.7; margin: 0 0 30px 0; }
+              .payment-box { background: linear-gradient(to bottom right, #ede9fe, #f3e8ff); border-left: 4px solid #7c3aed; padding: 24px; border-radius: 8px; margin: 30px 0; }
+              .payment-box h3 { margin: 0 0 16px 0; font-size: 18px; font-weight: 700; color: #111827; }
+              .bank-details { background-color: #ffffff; padding: 20px; border-radius: 6px; margin: 16px 0; }
+              .bank-details p { margin: 0 0 12px 0; font-size: 14px; color: #374151; }
+              .bank-details strong { color: #111827; font-weight: 600; }
+              .detail-row { display: flex; justify-content: space-between; padding: 8px 0; font-size: 14px; }
+              .detail-label { color: #6b7280; }
+              .detail-value { color: #111827; font-weight: 600; }
+              .cta-button { display: inline-block; background-color: #7c3aed; color: #ffffff; padding: 12px 28px; border-radius: 6px; text-decoration: none; font-weight: 600; margin: 20px 0; }
+              .invoice-section { margin: 30px 0; }
+              .section-title { font-size: 20px; font-weight: 700; color: #111827; margin: 0 0 16px 0; padding-bottom: 8px; border-bottom: 2px solid #e5e7eb; }
+              .order-info { background-color: #f9fafb; padding: 16px; border-radius: 6px; margin-bottom: 20px; }
+              .order-info span { color: #6b7280; font-size: 14px; }
+              .order-info strong { color: #111827; font-weight: 600; }
+              .items-table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+              .items-table thead { background-color: #f9fafb; }
+              .items-table th { padding: 12px; text-align: left; font-size: 13px; font-weight: 600; color: #6b7280; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 2px solid #e5e7eb; }
+              .items-table td { padding: 16px 12px; border-bottom: 1px solid #f3f4f6; font-size: 14px; color: #374151; }
+              .item-name { font-weight: 500; color: #111827; }
+              .item-qty { text-align: center; }
+              .item-price { text-align: right; font-weight: 600; color: #111827; }
+              .totals-section { background-color: #f9fafb; padding: 20px; border-radius: 8px; margin: 20px 0; }
+              .total-row { display: flex; justify-content: space-between; padding: 10px 0; font-size: 15px; }
+              .total-row.subtotal { color: #6b7280; }
+              .total-row.shipping { color: #6b7280; border-bottom: 1px solid #e5e7eb; padding-bottom: 16px; }
+              .total-row.grand-total { font-size: 20px; font-weight: 700; color: #111827; padding-top: 16px; border-top: 2px solid #d1d5db; }
+              .address-section { margin: 30px 0; padding: 20px; background-color: #fafafa; border-radius: 8px; }
+              .address-section h3 { margin: 0 0 12px 0; font-size: 16px; font-weight: 700; color: #111827; }
+              .address-content { font-size: 14px; line-height: 1.8; color: #4b5563; }
+              .address-name { font-weight: 600; color: #111827; margin-bottom: 4px; }
+              .footer { background-color: #f9fafb; padding: 30px; text-align: center; border-top: 1px solid #e5e7eb; }
+              .footer p { margin: 8px 0; color: #6b7280; font-size: 13px; line-height: 1.6; }
+              .footer a { color: #7c3aed; text-decoration: none; font-weight: 600; }
+              .highlight { background-color: #fef3c7; padding: 2px 6px; border-radius: 3px; }
+              @media only screen and (max-width: 600px) {
+                .email-wrapper { padding: 20px 10px; }
+                .content { padding: 30px 20px; }
+                .header { padding: 30px 20px; }
+                .items-table th, .items-table td { padding: 10px 8px; font-size: 13px; }
+              }
             </style>
           </head>
-          <body style="background-color: #f9fafb; padding: 20px;">
-            <div style="max-width: 600px; margin: 0 auto; background-color: white; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
-              
-              <!-- Header -->
-              <div style="background-color: #7c3aed; color: white; padding: 30px 20px; text-align: left;">
-                <h1 style="margin: 0; font-size: 20px; font-weight: 600;">Itel Solar | Inverter, Battery, Panel and Solar Generator</h1>
-              </div>
-              
-              <!-- Content -->
-              <div style="padding: 40px 30px;">
+          <body>
+            <div class="email-wrapper">
+              <div class="email-container">
                 
-                <!-- Thank You -->
-                <h2 style="margin: 0 0 20px 0; font-size: 28px; font-weight: 700; color: #111827;">Thank you for your order</h2>
+                <!-- Header -->
+                <div class="header">
+                  <h1>📦 Order Invoice</h1>
+                  <p>FlySolarStore - Your Solar Solutions Partner</p>
+                </div>
                 
-                <p style="margin: 0 0 10px 0; color: #374151; font-size: 16px;">Hi ${data.shippingAddress.name.split(' ')[0].toUpperCase()},</p>
-                
-                <p style="margin: 0 0 20px 0; color: #6b7280; font-size: 14px; line-height: 1.6;">
-                  We've received your order and it's currently on hold until we can confirm your payment has been processed.
-                </p>
-                
-                <p style="margin: 0 0 30px 0; color: #374151; font-size: 14px;">
-                  Here's a reminder of what you've ordered:
-                </p>
-                
-                <!-- Order Info Box -->
-                <div style="background-color: #f9fafb; padding: 20px; border-radius: 6px; margin-bottom: 30px;">
-                  <p style="margin: 0 0 15px 0; color: #6b7280; font-size: 14px;">
-                    Kindly Send the receipt of the bank transfer to <a href="tel:08071444456" style="color: #7c3aed; text-decoration: none; font-weight: 600;">08071444456</a>
+                <!-- Main Content -->
+                <div class="content">
+                  
+                  <!-- Status Badge -->
+                  <div style="text-align: center;">
+                    <span class="status-badge">⏳ Awaiting Payment</span>
+                  </div>
+                  
+                  <!-- Greeting -->
+                  <p class="greeting">Hello ${data.shippingAddress.name.split(' ')[0]},</p>
+                  
+                  <!-- Message -->
+                  <p class="message">
+                    Thank you for placing your order with FlySolarStore! We've successfully received your order and it's currently pending payment confirmation.
                   </p>
                   
-                  <h3 style="margin: 0 0 15px 0; font-size: 18px; font-weight: 700; color: #111827;">Our bank details</h3>
+                  <p class="message">
+                    To complete your purchase, please proceed with the payment using the bank details provided below. Once payment is made, kindly send your payment receipt to us for verification.
+                  </p>
                   
-                  <p style="margin: 0 0 5px 0; font-size: 14px; font-weight: 700; color: #111827;">VISIBILITY MARKETING COMPANY :</p>
-                  
-                  <ul style="margin: 10px 0; padding-left: 20px; color: #374151; font-size: 14px;">
-                    <li style="margin-bottom: 5px;">Bank: <strong>UBA</strong></li>
-                    <li>Account number: <strong>1027234184</strong></li>
-                  </ul>
-                </div>
-                
-                <!-- Order Summary -->
-                <h3 style="margin: 0 0 10px 0; font-size: 20px; font-weight: 700; color: #111827;">Order summary</h3>
-                <p style="margin: 0 0 20px 0; color: #6b7280; font-size: 14px;">
-                  Order #${data.orderNumber.split('-').slice(1).join('-') || data.orderNumber} (${new Date(data.createdAt).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })})
-                </p>
-                
-                <!-- Order Items Table -->
-                <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
-                  <tbody>
-                    ${itemsHtml}
-                  </tbody>
-                </table>
-                
-                <!-- Totals -->
-                <div style="border-top: 1px solid #e5e7eb; padding-top: 15px;">
-                  <table style="width: 100%; margin-bottom: 10px;">
-                    <tr>
-                      <td style="padding: 8px 0; color: #374151; font-size: 14px;">Subtotal:</td>
-                      <td style="padding: 8px 0; text-align: right; color: #111827; font-weight: 600; font-size: 14px;">₦${data.subtotal.toLocaleString('en-NG', { minimumFractionDigits: 2 })}</td>
-                    </tr>
-                    <tr>
-                      <td style="padding: 8px 0; color: #374151; font-size: 14px;">
-                        ${shippingMethodText}${shippingLocation ? '<br/><span style="font-size: 12px; color: #6b7280;">' + shippingLocation + '</span>' : ''}
-                      </td>
-                      <td style="padding: 8px 0; text-align: right;">
-                        <div style="color: #111827; font-weight: 600; font-size: 14px;">Pickup cost:</div>
-                        <div style="color: #111827; font-weight: 600; font-size: 14px;">₦${data.shippingCost.toLocaleString('en-NG', { minimumFractionDigits: 2 })}</div>
-                      </td>
-                    </tr>
-                    <tr>
-                      <td style="padding: 15px 0 8px 0; color: #111827; font-size: 16px; font-weight: 700; border-top: 2px solid #e5e7eb;">Total:</td>
-                      <td style="padding: 15px 0 8px 0; text-align: right; color: #111827; font-size: 18px; font-weight: 700; border-top: 2px solid #e5e7eb;">₦${data.total.toLocaleString('en-NG', { minimumFractionDigits: 2 })}</td>
-                    </tr>
-                    <tr>
-                      <td style="padding: 0 0 15px 0; color: #374151; font-size: 14px;">Payment method:</td>
-                      <td style="padding: 0 0 15px 0; text-align: right; color: #374151; font-size: 14px;">Direct bank transfer</td>
-                    </tr>
-                  </table>
-                </div>
-                
-                <!-- Billing Address -->
-                <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb;">
-                  <h3 style="margin: 0 0 15px 0; font-size: 16px; font-weight: 700; color: #111827;">Billing address</h3>
-                  <div style="color: #374151; font-size: 14px; line-height: 1.8;">
-                    <div style="font-weight: 600; margin-bottom: 5px;">${data.billingAddress.name.toUpperCase()}</div>
-                    <div>${data.billingAddress.address}</div>
-                    <div>${data.billingAddress.state || 'Benin City'}</div>
-                    <div>${data.billingAddress.state || 'Akwa Ibom'}</div>
-                    <div>${data.billingAddress.country.label || 'Nigeria'}</div>
-                    <div><a href="tel:${data.billingAddress.contact}" style="color: #7c3aed; text-decoration: none;">${data.billingAddress.contact}</a></div>
-                    <div><a href="mailto:${data.billingAddress.email}" style="color: #7c3aed; text-decoration: none;">${data.billingAddress.email}</a></div>
+                  <!-- Payment Instructions Box -->
+                  <div class="payment-box">
+                    <h3>💳 Payment Instructions</h3>
+                    <p style="margin: 0 0 16px 0; color: #6b7280; font-size: 14px; line-height: 1.6;">
+                      Please transfer the total amount to the account below and send your payment receipt to 
+                      <a href="tel:08167360193" style="color: #7c3aed; text-decoration: none; font-weight: 600;">08167360193</a> via WhatsApp or SMS.
+                    </p>
+                    
+                    <div class="bank-details">
+                      <p style="margin: 0 0 16px 0; font-size: 15px; font-weight: 700; color: #7c3aed;">
+                        FLY SOLAR STORE NG LIMITED
+                      </p>
+                      <div class="detail-row">
+                        <span class="detail-label">Bank Name:</span>
+                        <span class="detail-value">UBA (United Bank for Africa)</span>
+                      </div>
+                      <div class="detail-row">
+                        <span class="detail-label">Account Number:</span>
+                        <span class="detail-value">0421451448</span>
+                      </div>
+                      <div class="detail-row" style="border-top: 1px solid #e5e7eb; margin-top: 12px; padding-top: 12px;">
+                        <span class="detail-label">Amount to Pay:</span>
+                        <span class="detail-value" style="font-size: 18px; color: #7c3aed;">₦${data.total.toLocaleString('en-NG', { minimumFractionDigits: 2 })}</span>
+                      </div>
+                    </div>
                   </div>
+                  
+                  <!-- Order Details Section -->
+                  <div class="invoice-section">
+                    <h2 class="section-title">Order Details</h2>
+                    
+                    <div class="order-info">
+                      <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                        <span>Order Number:</span>
+                        <strong>#${data.orderNumber.split('-').slice(1).join('-') || data.orderNumber}</strong>
+                      </div>
+                      <div style="display: flex; justify-content: space-between;">
+                        <span>Order Date:</span>
+                        <strong>${new Date(data.createdAt).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</strong>
+                      </div>
+                    </div>
+                    
+                    <!-- Items Table -->
+                    <table class="items-table">
+                      <thead>
+                        <tr>
+                          <th>Item</th>
+                          <th class="item-qty">Qty</th>
+                          <th class="item-price">Price</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        ${itemsHtml}
+                      </tbody>
+                    </table>
+                    
+                    <!-- Totals -->
+                    <div class="totals-section">
+                      <div class="total-row subtotal">
+                        <span>Subtotal:</span>
+                        <span style="font-weight: 600; color: #111827;">₦${data.subtotal.toLocaleString('en-NG', { minimumFractionDigits: 2 })}</span>
+                      </div>
+                      <div class="total-row shipping">
+                        <span>Pickup Cost (Lagos):</span>
+                        <span style="font-weight: 600; color: #111827;">₦${data.shippingCost.toLocaleString('en-NG', { minimumFractionDigits: 2 })}</span>
+                      </div>
+                      <div class="total-row grand-total">
+                        <span>Total Amount:</span>
+                        <span>₦${data.total.toLocaleString('en-NG', { minimumFractionDigits: 2 })}</span>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <!-- Billing Address -->
+                  <div class="address-section">
+                    <h3>📍 Billing Address</h3>
+                    <div class="address-content">
+                      <div class="address-name">${data.billingAddress.name.toUpperCase()}</div>
+                      <div>${data.billingAddress.address}</div>
+                      <div>${data.billingAddress.state || 'Akwa Ibom'}</div>
+                      <div>${data.billingAddress.country.label || 'Nigeria'}</div>
+                      <div style="margin-top: 8px;">
+                        <a href="tel:${data.billingAddress.contact}" style="color: #7c3aed; text-decoration: none;">${data.billingAddress.contact}</a>
+                      </div>
+                      <div>
+                        <a href="mailto:${data.billingAddress.email}" style="color: #7c3aed; text-decoration: none;">${data.billingAddress.email}</a>
+                      </div>
+                    </div>
+                  </div>
+                  
                 </div>
                 
-                <!-- Footer Message -->
-                <div style="margin-top: 40px; padding-top: 30px; border-top: 1px solid #e5e7eb; text-align: center;">
-                  <p style="margin: 0; color: #6b7280; font-size: 14px;">
-                    Thanks again! If you need any help with your order, please contact us at
+                <!-- Footer -->
+                <div class="footer">
+                  <p style="font-weight: 600; color: #111827; margin-bottom: 12px;">Need Help?</p>
+                  <p>If you have any questions about your order or payment, please contact us:</p>
+                  <p>
+                    📞 <a href="tel:08167360193">08167360193</a> | 
+                    📧 <a href="mailto:support@flysolarstore.com">support@flysolarstore.com</a>
+                  </p>
+                  <p style="margin-top: 20px; font-size: 12px; color: #9ca3af;">
+                    © ${new Date().getFullYear()} FlySolarStore. All rights reserved.
                   </p>
                 </div>
                 
