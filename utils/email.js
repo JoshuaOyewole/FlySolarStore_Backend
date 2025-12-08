@@ -168,8 +168,8 @@ const sendEmail = async ({ to, subject, template, data }) => {
       `).join('');
 
       // Determine shipping method text
-      let shippingMethodText = 'Shipping';
-      let shippingLocation = '';
+      //let shippingMethodText = 'Shipping';
+      //let shippingLocation = '';
       if (data.shippingCost === 0 || data.shippingCost < 10000) {
         shippingMethodText = 'Shipping: Pickup (LAGOS)';
        /*  shippingLocation = 'Lagos - Alaba International Market'; */
@@ -267,13 +267,13 @@ const sendEmail = async ({ to, subject, template, data }) => {
                   <!-- Payment Instructions Box -->
                   <div class="payment-box">
                     <h3>💳 Payment Instructions</h3>
-                    <p style="margin: 0 0 16px 0; color: #6b7280; font-size: 14px; line-height: 1.6;">
+                    <p style="margin: 0 0 8px 0; color: #6b7280; font-size: 14px; line-height: 1.6;">
                       Please transfer the total amount to the account below and send your payment receipt to 
-                      <a href="tel:08167360193" style="color: #cc5500; text-decoration: none; font-weight: 600;">08167360193</a> via WhatsApp or SMS.
+                      <a href="tel:08167360193" text-decoration: none; font-weight: 600;">08167360193</a> via WhatsApp or SMS.
                     </p>
                     
                     <div class="bank-details">
-                      <p style="margin: 0 0 16px 0; font-size: 15px; font-weight: 700; color: #cc5500;">
+                      <p style="margin: 0 0 16px 0; font-size: 15px; font-weight: 700; color: #333;">
                         FLY SOLAR STORE NG LIMITED
                       </p>
                       <div class="detail-row">
@@ -286,7 +286,7 @@ const sendEmail = async ({ to, subject, template, data }) => {
                       </div>
                       <div class="detail-row" style="border-top: 1px solid #e5e7eb; margin-top: 12px; padding-top: 12px;">
                         <span class="detail-label">Amount to Pay:</span>
-                        <span class="detail-value" style="font-size: 18px; color: #cc5500;">₦${data.total.toLocaleString('en-NG', { minimumFractionDigits: 2 })}</span>
+                        <span class="detail-value" style="font-size: 18px; color: #333;">₦${data.total.toLocaleString('en-NG', { minimumFractionDigits: 2 })}</span>
                       </div>
                     </div>
                   </div>
@@ -298,11 +298,11 @@ const sendEmail = async ({ to, subject, template, data }) => {
                     <div class="order-info">
                       <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
                         <span>Order Number:</span>
-                        <strong>#${data.orderNumber.split('-').slice(1).join('-') || data.orderNumber}</strong>
+                        <strong> #${data.orderNumber.split('-').slice(1).join('-') || data.orderNumber}</strong>
                       </div>
                       <div style="display: flex; justify-content: space-between;">
                         <span>Order Date:</span>
-                        <strong>${new Date(data.createdAt).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</strong>
+                        <strong> ${new Date(data.createdAt).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</strong>
                       </div>
                     </div>
                     
@@ -327,7 +327,7 @@ const sendEmail = async ({ to, subject, template, data }) => {
                         <span style="font-weight: 600; color: #111827;">₦${data.subtotal.toLocaleString('en-NG', { minimumFractionDigits: 2 })}</span>
                       </div>
                       <div class="total-row shipping">
-                        <span>Pickup Cost (Lagos):</span>
+                        <span>Pickup Cost (Within Lagos):</span>
                         <span style="font-weight: 600; color: #111827;">₦${data.shippingCost.toLocaleString('en-NG', { minimumFractionDigits: 2 })}</span>
                       </div>
                       <div class="total-row grand-total">
@@ -337,22 +337,7 @@ const sendEmail = async ({ to, subject, template, data }) => {
                     </div>
                   </div>
                   
-                  <!-- Billing Address -->
-                  <div class="address-section">
-                    <h3>📍 Billing Address</h3>
-                    <div class="address-content">
-                      <div class="address-name">${data.billingAddress.name.toUpperCase()}</div>
-                      <div>${data.billingAddress.address}</div>
-                      <div>${data.billingAddress.state || 'Akwa Ibom'}</div>
-                      <div>${data.billingAddress.country.label || 'Nigeria'}</div>
-                      <div style="margin-top: 8px;">
-                        <a href="tel:${data.billingAddress.contact}" style="color: #cc5500; text-decoration: none;">${data.billingAddress.contact}</a>
-                      </div>
-                      <div>
-                        <a href="mailto:${data.billingAddress.email}" style="color: #cc5500; text-decoration: none;">${data.billingAddress.email}</a>
-                      </div>
-                    </div>
-                  </div>
+               
                   
                 </div>
                 

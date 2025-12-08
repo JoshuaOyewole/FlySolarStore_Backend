@@ -7,7 +7,7 @@ const { sendOrderConfirmation } = require('../utils/email');
 // @route   POST /api/orders
 // @access  Public
 exports.createOrder = catchAsync(async (req, res, next) => {
-  const { items, shippingAddress, billingAddress, sameAsShipping, userId } = req.body;
+  const { items, shippingAddress, userId } = req.body;
 
   // Validation
   if (!items || items.length === 0) {
@@ -18,16 +18,14 @@ exports.createOrder = catchAsync(async (req, res, next) => {
     return next(new AppError('Shipping address is required', 400));
   }
 
-  if (!sameAsShipping && !billingAddress) {
+ /*  if (!sameAsShipping && !billingAddress) {
     return next(new AppError('Billing address is required', 400));
-  }
+  } */
 
   // Create order with optional user association
   const order = await orderService.createOrder({
     items,
     shippingAddress,
-    billingAddress,
-    sameAsShipping: sameAsShipping || false,
     userId: userId || null // Associate with user if provided
   });
 

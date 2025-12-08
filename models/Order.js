@@ -70,14 +70,6 @@ const orderSchema = new mongoose.Schema({
     type: addressSchema,
     required: true
   },
-  billingAddress: {
-    type: addressSchema,
-    required: true
-  },
-  sameAsShipping: {
-    type: Boolean,
-    default: false
-  },
   subtotal: {
     type: Number,
     required: true

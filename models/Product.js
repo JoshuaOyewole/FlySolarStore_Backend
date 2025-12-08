@@ -57,7 +57,7 @@ const productSchema = new mongoose.Schema({
   }],
   stock: {
     type: Number,
-    default: 0,
+    default: 5000,
     min: [0, 'Stock cannot be negative']
   },
   rating: {
@@ -70,10 +70,10 @@ const productSchema = new mongoose.Schema({
     demo: String,
     type: String
   },
-  shop: {
+/*   shop: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Shop'
-  },
+  }, */
   isFeatured: {
     type: Boolean,
     default: false

@@ -1,9 +1,10 @@
-const Order = require('../models/Order');
-const Product = require('../models/Product');
+const Order = require("../models/Order");
+const Product = require("../models/Product");
 
 class OrderService {
   async createOrder(orderData) {
-    const { items, shippingAddress, billingAddress, sameAsShipping, userId } = orderData;
+    const { items, shippingAddress, userId } =
+      orderData;
 
     // Validate and enrich items with product data
     const enrichedItems = await Promise.all(
@@ -11,7 +12,7 @@ class OrderService {
         // Try to find product by MongoDB _id or custom id field
         let product;
         const productIdentifier = item.productId || item.id;
-        
+
         // Check if it's a valid MongoDB ObjectId (24 hex characters)
         if (productIdentifier && productIdentifier.match(/^[0-9a-fA-F]{24}$/)) {
           product = await Product.findById(productIdentifier);
@@ -19,7 +20,7 @@ class OrderService {
           // It's a custom id field, search by it
           product = await Product.findOne({ id: productIdentifier });
         }
-        
+
         if (!product) {
           throw new Error(`Product not found: ${productIdentifier}`);
         }
@@ -39,17 +40,20 @@ class OrderService {
             slug: product.slug,
             thumbnail: product.thumbnail,
             price: product.price,
-            discount: product.discount
+            discount: product.discount,
           },
           quantity: item.qty,
           price: price,
-          subtotal: subtotal
+          subtotal: subtotal,
         };
       })
     );
 
     // Calculate totals
-    const subtotal = enrichedItems.reduce((sum, item) => sum + item.subtotal, 0);
+    const subtotal = enrichedItems.reduce(
+      (sum, item) => sum + item.subtotal,
+      0
+    );
     //const tax = subtotal * 0.075; // 7.5% VAT
     const tax = 0; // No tax for now
     const shippingCost = 0; // No shipping cost for now, it will be negotiated after payment
@@ -65,30 +69,14 @@ class OrderService {
         contact: shippingAddress.contact,
         address: shippingAddress.address,
         state: shippingAddress.state,
-        country: shippingAddress.country
+        country: shippingAddress.country,
       },
-      billingAddress: sameAsShipping ? {
-        name: shippingAddress.name,
-        email: shippingAddress.email,
-        contact: shippingAddress.contact,
-        address: shippingAddress.address,
-        state: shippingAddress.state,
-        country: shippingAddress.country
-      } : {
-        name: billingAddress.name,
-        email: billingAddress.email,
-        contact: billingAddress.contact,
-        address: billingAddress.address,
-        state: billingAddress.state,
-        country: billingAddress.country
-      },
-      sameAsShipping,
       subtotal,
       tax,
       shippingCost,
       total,
-      status: 'pending',
-      paymentStatus: 'pending'
+      status: "pending",
+      paymentStatus: "pending",
     };
 
     // Associate with user if userId provided
@@ -104,7 +92,7 @@ class OrderService {
     await Promise.all(
       enrichedItems.map(async (item) => {
         await Product.findByIdAndUpdate(item.product, {
-          $inc: { stock: -item.quantity }
+          $inc: { stock: -item.quantity },
         });
       })
     );
@@ -114,14 +102,14 @@ class OrderService {
 
   async getOrderById(orderId) {
     const order = await Order.findById(orderId)
-      .populate('items.product', 'title slug thumbnail price discount')
+      .populate("items.product", "title slug thumbnail price discount")
       .lean();
     return order;
   }
 
   async getOrderByOrderNumber(orderNumber) {
     const order = await Order.findOne({ orderNumber })
-      .populate('items.product', 'title slug thumbnail price discount')
+      .populate("items.product", "title slug thumbnail price discount")
       .lean();
     return order;
   }
@@ -135,7 +123,7 @@ class OrderService {
 
     const orders = await Order.find(query)
       .sort({ createdAt: -1 })
-      .populate('items.product', 'title slug thumbnail price discount')
+      .populate("items.product", "title slug thumbnail price discount")
       .lean();
 
     return orders;
@@ -154,9 +142,9 @@ class OrderService {
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(limit)
-        .populate('items.product', 'title slug thumbnail price discount')
+        .populate("items.product", "title slug thumbnail price discount")
         .lean(),
-      Order.countDocuments(query)
+      Order.countDocuments(query),
     ]);
 
     return { orders, total };
@@ -174,9 +162,9 @@ class OrderService {
   async markInvoiceSent(orderId) {
     const order = await Order.findByIdAndUpdate(
       orderId,
-      { 
+      {
         invoiceSent: true,
-        invoiceSentAt: new Date()
+        invoiceSentAt: new Date(),
       },
       { new: true }
     );
