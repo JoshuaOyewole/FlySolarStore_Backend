@@ -21,6 +21,14 @@ const sendTokenResponse = (user, statusCode, res) => {
   // Remove password from output
   user.password = undefined;
 
+  res.cookie("token", token, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production" ? true : false,
+    sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+    maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+    path: "/",
+  });
+
   res.status(statusCode).json({
     success: true,
     token,
@@ -50,16 +58,30 @@ const register = catchAsync(async (req, res, next) => {
   }
 
   // Prevent registration with disposable email addresses
-  const disposableEmailDomains = ["mailinator.com", "tempmail.com", "10minutemail.com"];
+  const disposableEmailDomains = [
+    "mailinator.com",
+    "tempmail.com",
+    "10minutemail.com",
+  ];
   const emailDomain = email.split("@")[1];
 
   if (disposableEmailDomains.includes(emailDomain)) {
-    return next(new AppError("Registration using disposable email addresses is not allowed", 400));
+    return next(
+      new AppError(
+        "Registration using disposable email addresses is not allowed",
+        400
+      )
+    );
   }
   // Validate password strength
-const passwordRegex = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d@$!%*?&]{8,}$/;
+  const passwordRegex = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d@$!%*?&]{8,}$/;
   if (!passwordRegex.test(password)) {
-    return next(new AppError("Password must be at least 8 characters long and contain both letters and numbers", 400));
+    return next(
+      new AppError(
+        "Password must be at least 8 characters long and contain both letters and numbers",
+        400
+      )
+    );
   }
 
   // Create user
@@ -69,7 +91,7 @@ const passwordRegex = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d@$!%*?&]{8,}$/;
     email,
     password,
   });
-  
+
   // Generate email verification token
   const emailVerificationToken = crypto.randomBytes(32).toString("hex");
   user.emailVerificationToken = emailVerificationToken;
@@ -159,6 +181,12 @@ const login = catchAsync(async (req, res, next) => {
 // @route   POST /api/auth/logout
 // @access  Private
 const logout = catchAsync(async (req, res, next) => {
+  // Clear the token cookie
+  res.cookie("token", "", {
+    httpOnly: true,
+    expires: new Date(0),
+  });
+
   res.status(200).json({
     success: true,
     message: "Logged out successfully",
@@ -312,9 +340,9 @@ const verifyEmail = catchAsync(async (req, res, next) => {
       data: {
         user: {
           email: user.email,
-          isEmailVerified: user.isEmailVerified
-        }
-      }
+          isEmailVerified: user.isEmailVerified,
+        },
+      },
     });
   }
 
@@ -329,9 +357,9 @@ const verifyEmail = catchAsync(async (req, res, next) => {
     data: {
       user: {
         email: user.email,
-        isEmailVerified: user.isEmailVerified
-      }
-    }
+        isEmailVerified: user.isEmailVerified,
+      },
+    },
   });
 });
 
@@ -369,8 +397,8 @@ const updateProfile = catchAsync(async (req, res, next) => {
   res.status(200).json({
     success: true,
     data: {
-      user
-    }
+      user,
+    },
   });
 });
 

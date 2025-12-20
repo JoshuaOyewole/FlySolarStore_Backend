@@ -4,6 +4,7 @@ const helmet = require('helmet');
 const morgan = require('morgan');
 const rateLimit = require('express-rate-limit');
 require('dotenv').config();
+const cookieParser = require('cookie-parser');
 
 const connectDB = require('./database/connection');
 const errorHandler = require('./middleware/errorHandler');
@@ -25,6 +26,7 @@ connectDB();
 
 //Security Middleware
 app.use(helmet());
+app.use(cookieParser());
 app.use(cors({
   origin: process.env.FRONTEND_URL || 'http://localhost:3000',
   credentials: true

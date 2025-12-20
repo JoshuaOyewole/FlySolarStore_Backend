@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const { addressSchema } = require('./Address');
 
 const orderItemSchema = new mongoose.Schema({
   product: {
@@ -28,33 +29,6 @@ const orderItemSchema = new mongoose.Schema({
     required: true
   }
 });
-
-const addressSchema = new mongoose.Schema({
-  name: {
-    type: String,
-    required: true
-  },
-  email: {
-    type: String,
-    required: true
-  },
-  contact: {
-    type: String,
-    required: true
-  },
-  address: {
-    type: String,
-    required: true
-  },
-  state: {
-    type: String,
-    required: true
-  },
-  country: {
-    label: String,
-    value: String
-  }
-}, { _id: false });
 
 const orderSchema = new mongoose.Schema({
   orderNumber: {

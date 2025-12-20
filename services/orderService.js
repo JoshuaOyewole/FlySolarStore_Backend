@@ -1,5 +1,7 @@
 const Order = require("../models/Order");
 const Product = require("../models/Product");
+const User = require("../models/User");
+const Address = require("../models/Address");
 
 class OrderService {
   async createOrder(orderData) {
@@ -81,12 +83,50 @@ class OrderService {
 
     // Associate with user if userId provided
     if (userId) {
+      
       orderObj.user = userId;
+      
+      // Save shipping address to user's addresses for future reference
+      try {
+        const user = await User.findById(userId);
+        if (user) {
+          // Check if this address already exists
+          const existingAddresses = await Address.find({ _id: { $in: user.addresses } });
+          const addressExists = existingAddresses.some(addr => 
+            addr.name === shippingAddress.name &&
+            addr.address === shippingAddress.address &&
+            addr.contact === shippingAddress.contact
+          );
+
+          if (!addressExists) {
+            // Create new address
+            const newAddress = await Address.create({
+              name: shippingAddress.name,
+              email: shippingAddress.email,
+              contact: shippingAddress.contact,
+              address: shippingAddress.address,
+              state: shippingAddress.state,
+              country: shippingAddress.country,
+            });
+
+            // Add to user's addresses
+            user.addresses.push(newAddress._id);
+            await user.save();
+          }
+        }
+      } catch (error) {
+        console.error("Failed to save address to user profile:", error);
+        // Don't fail order creation if address save fails
+      }
+    } else {
+      console.log("No userId provided - creating order as guest");
     }
 
+  
     const order = new Order(orderObj);
 
     await order.save();
+   
 
     // Update product stock
     await Promise.all(

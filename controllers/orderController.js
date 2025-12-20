@@ -1,32 +1,32 @@
-const orderService = require('../services/orderService');
-const catchAsync = require('../utils/catchAsync');
-const AppError = require('../utils/appError');
-const { sendOrderConfirmation } = require('../utils/email');
+const orderService = require("../services/orderService");
+const catchAsync = require("../utils/catchAsync");
+const AppError = require("../utils/appError");
+const { sendOrderConfirmation } = require("../utils/email");
 
 // @desc    Create new order
 // @route   POST /api/orders
-// @access  Public
+// @access  Public (with optional auth)
 exports.createOrder = catchAsync(async (req, res, next) => {
-  const { items, shippingAddress, userId } = req.body;
+  const { items, shippingAddress } = req.body;
 
   // Validation
   if (!items || items.length === 0) {
-    return next(new AppError('Order must contain at least one item', 400));
+    return next(new AppError("Order must contain at least one item", 400));
   }
 
   if (!shippingAddress) {
-    return next(new AppError('Shipping address is required', 400));
+    return next(new AppError("Shipping address is required", 400));
   }
 
- /*  if (!sameAsShipping && !billingAddress) {
-    return next(new AppError('Billing address is required', 400));
-  } */
+  // Use authenticated user's ID if available, otherwise allow guest checkout
+  const userId = req.user ? req.user._id : null;
+
 
   // Create order with optional user association
   const order = await orderService.createOrder({
     items,
     shippingAddress,
-    userId: userId || null // Associate with user if provided
+    userId,
   });
 
   // Send invoice email
@@ -34,14 +34,14 @@ exports.createOrder = catchAsync(async (req, res, next) => {
     await sendOrderConfirmation(order);
     await orderService.markInvoiceSent(order._id);
   } catch (emailError) {
-    console.error('Failed to send order confirmation email:', emailError);
+    console.error("Failed to send order confirmation email:", emailError);
     // Don't fail the order creation if email fails
   }
 
   res.status(201).json({
     success: true,
-    message: 'Order created successfully',
-    data: order
+    message: "Order created successfully",
+    data: order,
   });
 });
 
@@ -52,7 +52,7 @@ exports.getOrder = catchAsync(async (req, res, next) => {
   const { identifier } = req.params;
 
   let order;
-  
+
   // Check if it's a MongoDB ObjectId or order number
   if (identifier.match(/^[0-9a-fA-F]{24}$/)) {
     order = await orderService.getOrderById(identifier);
@@ -61,12 +61,12 @@ exports.getOrder = catchAsync(async (req, res, next) => {
   }
 
   if (!order) {
-    return next(new AppError('Order not found', 404));
+    return next(new AppError("Order not found", 404));
   }
 
   res.status(200).json({
     success: true,
-    data: order
+    data: order,
   });
 });
 
@@ -79,7 +79,10 @@ exports.getMyOrders = catchAsync(async (req, res, next) => {
   const limit = parseInt(req.query.limit) || 10;
   const skip = (page - 1) * limit;
 
-  const { orders, total } = await orderService.getUserOrdersWithPagination(userId, { skip, limit });
+  const { orders, total } = await orderService.getUserOrdersWithPagination(
+    userId,
+    { skip, limit }
+  );
 
   res.status(200).json({
     success: true,
@@ -90,9 +93,9 @@ exports.getMyOrders = catchAsync(async (req, res, next) => {
         totalPages: Math.ceil(total / limit),
         totalOrders: total,
         hasNextPage: page < Math.ceil(total / limit),
-        hasPrevPage: page > 1
-      }
-    }
+        hasPrevPage: page > 1,
+      },
+    },
   });
 });
 
@@ -108,7 +111,7 @@ exports.getUserOrders = catchAsync(async (req, res, next) => {
   res.status(200).json({
     success: true,
     count: orders.length,
-    data: orders
+    data: orders,
   });
 });
 
@@ -120,19 +123,19 @@ exports.updateOrderStatus = catchAsync(async (req, res, next) => {
   const { status } = req.body;
 
   if (!status) {
-    return next(new AppError('Status is required', 400));
+    return next(new AppError("Status is required", 400));
   }
 
   const order = await orderService.updateOrderStatus(id, status);
 
   if (!order) {
-    return next(new AppError('Order not found', 404));
+    return next(new AppError("Order not found", 404));
   }
 
   res.status(200).json({
     success: true,
-    message: 'Order status updated successfully',
-    data: order
+    message: "Order status updated successfully",
+    data: order,
   });
 });
 
@@ -145,7 +148,7 @@ exports.resendInvoice = catchAsync(async (req, res, next) => {
   const order = await orderService.getOrderById(id);
 
   if (!order) {
-    return next(new AppError('Order not found', 404));
+    return next(new AppError("Order not found", 404));
   }
 
   try {
@@ -154,9 +157,9 @@ exports.resendInvoice = catchAsync(async (req, res, next) => {
 
     res.status(200).json({
       success: true,
-      message: 'Invoice sent successfully'
+      message: "Invoice sent successfully",
     });
   } catch (error) {
-    return next(new AppError('Failed to send invoice', 500));
+    return next(new AppError("Failed to send invoice", 500));
   }
 });

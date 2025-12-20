@@ -8,11 +8,11 @@ const {
   updateOrderStatus,
   resendInvoice
 } = require('../controllers/orderController');
-const { authenticate, authorize } = require('../middleware/auth');
+const { authenticate, authorize, optionalAuth } = require('../middleware/auth');
 
-// Public routes
+// Public routes (but with optional auth to associate with user if logged in)
 // POST /api/orders - Create new order
-router.post('/', createOrder);
+router.post('/', optionalAuth, createOrder);
 
 // Protected routes (require authentication)
 // GET /api/orders/my-orders - Get authenticated user's orders with pagination

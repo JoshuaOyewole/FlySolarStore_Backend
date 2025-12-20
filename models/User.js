@@ -1,6 +1,9 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 
+// Register Address model for population
+require('./Address');
+
 const userSchema = new mongoose.Schema({
   firstName: {
     type: String,
