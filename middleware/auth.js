@@ -1,100 +1,158 @@
 const jwt = require("jsonwebtoken");
+const { StatusCodes } = require("http-status-codes");
+const mongoose = require("mongoose");
 const User = require("../models/User");
-const { AppError } = require("../utils/appError");
 
-const authenticate = async (req, res, next) => {
+// Protect routes
+
+async function verifyToken(tokenVaue) {
   try {
-    let token;
-    // Get token from cookies
-     if (req.cookies && req.cookies.token) {
-      token = req.cookies.token;
-    }
+    const decoded = jwt.verify(tokenVaue, process.env.JWT_SECRET);
+    console.log("Token Decoded - User Found:", decoded);
+    if (decoded) return decoded;
+  } catch (error) {
+    return null;
+  }
+}
 
-    console.log("Auth Token:", token);
+async function rbac(token, accountType) {
+  const accountTypes = ["admin", "userOrAdmin", "customer"];
+  if (!accountTypes.includes(accountType)) {
+    console.error(
+      `Invalid account type provided for authorization: ${accountType}`
+    );
+    return {
+      status: StatusCodes.INTERNAL_SERVER_ERROR,
+      error: "Internal server error",
+    };
+  }
+
+  try {
     if (!token) {
-      console.log("No token found");
-      return next(new AppError("Access denied. No token provided.", 401));
+      console.log("Token not provided for authorization.");
+      return { status: StatusCodes.UNAUTHORIZED, error: "Token not provided" };
     }
 
-    try {
-      // Verify token
-      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const authorized = await verifyToken(token);
+    //let user = await fetchUser(authorized.id);
+    let user = null;
 
-      // Get user from database
-      const user = await User.findById(decoded.id).select("-password");
-
-      if (!user) {
-        return next(new AppError("User not found. Token invalid.", 401));
-      }
-
-      if (!user.isActive) {
-        return next(new AppError("Account is deactivated.", 401));
-      }
-
-      // Check if user is locked
-      if (user.isLocked()) {
-        return next(new AppError("Account is temporarily locked.", 423));
-      }
-
-      req.user = user;
-      next();
-    } catch (error) {
-      return next(new AppError("Invalid token.", 401));
+    if (!authorized) {
+      console.log("Unable to verify token.");
+      return {
+        status: StatusCodes.UNAUTHORIZED,
+        error: "Unauthorized, error verifying token",
+      };
     }
+
+    if (accountType) {
+      const accountUser = await User.findOne({
+        _id: authorized.id,
+        role:
+          accountType === "userOrAdmin"
+            ? { $in: ["admin", "customer"] }
+            : accountType,
+      });
+
+      if (!accountUser) {
+        console.log(`Unauthorized ${accountType} access attempt detected.`);
+        return {
+          status: StatusCodes.UNAUTHORIZED,
+          error: `"Access denied, not" ${
+            accountType == "admin"
+              ? "an admin"
+              : accountType === "customer"
+              ? "a customer"
+              : "a user or admin"
+          }`,
+        };
+      }
+
+      user = accountUser;
+    }
+
+    return { status: true, user };
   } catch (error) {
-    next(error);
+    console.error(`Error in authorize By AccountType: ${error.message}`);
+    return {
+      status: StatusCodes.INTERNAL_SERVER_ERROR,
+      error: "Internal server error",
+    };
   }
-};
+}
 
-const authorize = (...roles) => {
-  return (req, res, next) => {
-    if (!req.user) {
-      return next(new AppError("Authentication required.", 401));
-    }
-
-    if (!roles.includes(req.user.role)) {
-      return next(
-        new AppError("Access denied. Insufficient permissions.", 403)
-      );
-    }
-
-    next();
-  };
-};
-
-// Optional authentication (doesn't fail if no token)
-const optionalAuth = async (req, res, next) => {
+exports.getTokenFromHeaders = (req, res, next) => {
+  let token;
   try {
-    let token;
-    // Get token from cookies
-    if (req.cookies && req.cookies.token) {
+    if (
+      req.headers.authorization &&
+      req.headers.authorization.startsWith("Bearer")
+    ) {
+      // Set token from Bearer token in header
+      token = req.headers.authorization.split(" ")[1];
+    } else if (req.cookies && req.cookies.token) {
+      // Set token from cookie
       token = req.cookies.token;
     }
 
-
-    if (token) {
-      try {
-        const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        const user = await User.findById(decoded.id).select("-password");
-
-        if (user && user.isActive && !user.isLocked()) {
-          req.user = user;
-
-        }
-      } catch (error) {
-        // Token invalid, continue without user
-        console.log("OptionalAuth - Token verification failed:", error.message);
-      }
+    // Make sure token exists
+    if (!token) {
+      return res.status(StatusCodes.UNAUTHORIZED).json({
+        status: false,
+        message: "Access token is required.",
+      });
     }
-
+    //add the token to req object
+    req.token = token;
     next();
   } catch (error) {
-    next(error);
+    throw new Error(`Error in protect middleware: ${error.message}`);
   }
 };
 
-module.exports = {
-  authenticate,
-  authorize,
-  optionalAuth,
+exports.adminOnly = async (req, res, next) => {
+  const token = req.token;
+
+  const authorized = await rbac(token, "admin");
+
+  if (authorized.status !== true) {
+    console.log("Unauthorized admin access attempt detected.:", authorized);
+    return res.status(StatusCodes.UNAUTHORIZED).json({
+      status: StatusCodes.UNAUTHORIZED,
+      error: authorized.error,
+    });
+  }
+  req.user = { id: new mongoose.Types.ObjectId(authorized.user._id) };
+  next();
+};
+
+exports.userOrAdmin = async (req, res, next) => {
+  const token = req.token;
+
+  const authorized = await rbac(token, "userOrAdmin");
+
+  if (authorized.status !== true) {
+    console.error("Unauthorized user access attempt detected.");
+    return res.status(StatusCodes.UNAUTHORIZED).json({
+      status: StatusCodes.UNAUTHORIZED,
+      error: authorized.error,
+    });
+  }
+  req.user = { id: new mongoose.Types.ObjectId(authorized.user._id) };
+  next();
+};
+exports.userOnly = async (req, res, next) => {
+  const token = req.token;
+
+  const authorized = await rbac(token, "customer");
+
+  if (authorized.status !== true) {
+    console.error("Unauthorized user access attempt detected.");
+    return res.status(StatusCodes.UNAUTHORIZED).json({
+      status: StatusCodes.UNAUTHORIZED,
+      error: authorized.error,
+    });
+  }
+  req.user = { id: new mongoose.Types.ObjectId(authorized.user._id) };
+  next();
 };

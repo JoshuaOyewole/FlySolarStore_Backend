@@ -13,7 +13,8 @@ const orderItemSchema = new mongoose.Schema({
     slug: String,
     thumbnail: String,
     price: Number,
-    discount: Number
+    discount: Number,
+    category: String
   },
   quantity: {
     type: Number,

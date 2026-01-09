@@ -50,12 +50,6 @@ const createTransporter = () => {
     transportConfig.requireTLS = true;
   }
   
-  console.log('📧 Email configuration:', {
-    host: process.env.EMAIL_HOST,
-    port: port,
-    secure: isSecure,
-    user: process.env.EMAIL_USER?.substring(0, 3) + '***'
-  });
   
   return mailerModule.createTransport(transportConfig);
 };

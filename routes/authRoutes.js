@@ -1,10 +1,11 @@
 const express = require('express');
 const router = express.Router();
 const { register, login, logout, getMe, verifyEmail, forgotPassword, resetPassword, updatePassword, updateProfile } = require('../controllers/authController');
-const { authenticate } = require('../middleware/auth');
 const { validateRegister, validateLogin, validateForgotPassword, validateResetPassword } = require('../validators/authValidator');
 const { sendEmail } = require('../utils/email');
 const catchAsync = require('../utils/catchAsync');
+const { userOrAdmin, getTokenFromHeaders } = require('../middleware/auth');
+
 
 // POST /api/auth/register
 router.post('/register', validateRegister, register);
@@ -13,10 +14,10 @@ router.post('/register', validateRegister, register);
 router.post('/login', validateLogin, login);
 
 // POST /api/auth/logout
-router.post('/logout', authenticate, logout);
+router.post('/logout', getTokenFromHeaders, userOrAdmin, logout);
 
 // GET /api/auth/me
-router.get('/me', authenticate, getMe);
+router.get('/me', getTokenFromHeaders, userOrAdmin, getMe);
 
 // GET /api/auth/verify-email
 router.get('/verify-email', verifyEmail);
@@ -28,10 +29,10 @@ router.post('/forgot-password', validateForgotPassword, forgotPassword);
 router.post('/reset-password', validateResetPassword, resetPassword);
 
 // PUT /api/auth/update-password
-router.put('/update-password', authenticate, updatePassword);
+router.put('/update-password', getTokenFromHeaders, userOrAdmin, updatePassword);
 
 // PUT /api/auth/update-profile
-router.put('/update-profile', authenticate, updateProfile);
+router.put('/update-profile', getTokenFromHeaders, userOrAdmin, updateProfile);
 
 // POST /api/auth/test-email - Test email delivery
 router.post('/test-email', catchAsync(async (req, res, next) => {

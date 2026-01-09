@@ -2,6 +2,7 @@ const orderService = require("../services/orderService");
 const catchAsync = require("../utils/catchAsync");
 const AppError = require("../utils/appError");
 const { sendOrderConfirmation } = require("../utils/email");
+const { StatusCodes } = require("http-status-codes");
 
 // @desc    Create new order
 // @route   POST /api/orders
@@ -20,7 +21,6 @@ exports.createOrder = catchAsync(async (req, res, next) => {
 
   // Use authenticated user's ID if available, otherwise allow guest checkout
   const userId = req.user ? req.user._id : null;
-
 
   // Create order with optional user association
   const order = await orderService.createOrder({
@@ -65,6 +65,24 @@ exports.getOrder = catchAsync(async (req, res, next) => {
   }
 
   res.status(200).json({
+    success: true,
+    data: order,
+  });
+});
+// @desc    Get order by ID or order number
+exports.getOrderDetails = catchAsync(async (req, res, next) => {
+  const { orderId } = req.query;
+
+  const order = await orderService.getOrderById(orderId);
+  console.log("Fetched order details for orderId:", orderId, order);
+  if (!order) {
+    return res.status(StatusCodes.NOT_FOUND).json({
+      success: false,
+      message: "Order not found",
+    });
+  }
+
+  res.status(StatusCodes.OK).json({
     success: true,
     data: order,
   });
@@ -162,4 +180,28 @@ exports.resendInvoice = catchAsync(async (req, res, next) => {
   } catch (error) {
     return next(new AppError("Failed to send invoice", 500));
   }
+});
+
+//@desc fetching all orders with pagination for admin
+// @route   GET /api/admin/all-orders
+
+exports.getAllOrders = catchAsync(async (req, res, next) => {
+  const page = parseInt(req.query.page) || 1;
+  const limit = parseInt(req.query.limit) || 10;
+  const skip = (page - 1) * limit;
+  const { orders, total } = await orderService.getAllOrdersWithPagination({
+    skip,
+    limit,
+  });
+  res.status(StatusCodes.OK).json({
+    success: true,
+    data: {
+      orders,
+      pagination: {
+        currentPage: page,
+        totalPages: Math.ceil(total / limit),
+        total_rows: total,
+      },
+    },
+  });
 });

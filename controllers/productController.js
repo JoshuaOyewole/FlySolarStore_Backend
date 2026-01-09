@@ -1,6 +1,7 @@
-const productService = require('../services/productService');
-const catchAsync = require('../utils/catchAsync');
-const AppError = require('../utils/appError');
+const productService = require("../services/productService");
+const catchAsync = require("../utils/catchAsync");
+const { StatusCodes } = require("http-status-codes");
+const uploadToCloudinary = require("../utils/uploadToCloudinary");
 
 // @desc    Get flash deal products
 // @route   GET /api/products/flash-deals
@@ -11,7 +12,7 @@ exports.getFlashDeals = catchAsync(async (req, res) => {
   res.status(200).json({
     success: true,
     count: products.length,
-    data: products
+    data: products,
   });
 });
 
@@ -25,7 +26,7 @@ exports.getJustForYou = catchAsync(async (req, res) => {
   res.status(200).json({
     success: true,
     count: products.length,
-    data: products
+    data: products,
   });
 });
 
@@ -38,7 +39,7 @@ exports.getNewArrivals = catchAsync(async (req, res) => {
   res.status(200).json({
     success: true,
     count: products.length,
-    data: products
+    data: products,
   });
 });
 
@@ -51,7 +52,7 @@ exports.getFeaturedProducts = catchAsync(async (req, res) => {
   res.status(200).json({
     success: true,
     count: products.length,
-    data: products
+    data: products,
   });
 });
 
@@ -64,7 +65,7 @@ exports.getFeaturedGridProducts = catchAsync(async (req, res) => {
   res.status(200).json({
     success: true,
     count: products.length,
-    data: products
+    data: products,
   });
 });
 
@@ -74,13 +75,13 @@ exports.getFeaturedGridProducts = catchAsync(async (req, res) => {
 exports.getProductsByCategory = catchAsync(async (req, res) => {
   const { category } = req.params;
   const limit = parseInt(req.query.limit) || 12;
-  
+
   const products = await productService.getProductsByCategory(category, limit);
 
   res.status(200).json({
     success: true,
     count: products.length,
-    data: products
+    data: products,
   });
 });
 
@@ -89,7 +90,7 @@ exports.getProductsByCategory = catchAsync(async (req, res) => {
 // @access  Public
 exports.getProduct = catchAsync(async (req, res, next) => {
   const { identifier } = req.params;
-  
+
   // Try to get by ID first, then by slug
   let product;
   if (identifier.match(/^[0-9a-fA-F]{24}$/)) {
@@ -101,12 +102,15 @@ exports.getProduct = catchAsync(async (req, res, next) => {
   }
 
   if (!product) {
-    return next(new AppError('Product not found', 404));
+    return res.status(404).json({
+      success: false,
+      message: "Product not found",
+    });
   }
 
   res.status(200).json({
     success: true,
-    data: product
+    data: product,
   });
 });
 
@@ -116,7 +120,7 @@ exports.getProduct = catchAsync(async (req, res, next) => {
 exports.getRelatedProducts = catchAsync(async (req, res, next) => {
   const { identifier } = req.params;
   const limit = parseInt(req.query.limit) || 8;
-  
+
   // Get the product first
   let product;
   if (identifier.match(/^[0-9a-fA-F]{24}$/)) {
@@ -126,19 +130,22 @@ exports.getRelatedProducts = catchAsync(async (req, res, next) => {
   }
 
   if (!product) {
-    return next(new AppError('Product not found', 404));
+    return res.status(404).json({
+      success: false,
+      message: "Product not found",
+    });
   }
 
   const relatedProducts = await productService.getRelatedProducts(
     product._id,
-    product.categories,
+    product.category,
     limit
   );
 
   res.status(200).json({
     success: true,
     count: relatedProducts.length,
-    data: relatedProducts
+    data: relatedProducts,
   });
 });
 
@@ -151,7 +158,7 @@ exports.searchProducts = catchAsync(async (req, res) => {
   if (!q) {
     return res.status(400).json({
       success: false,
-      message: 'Search query is required'
+      message: "Search query is required",
     });
   }
 
@@ -159,7 +166,7 @@ exports.searchProducts = catchAsync(async (req, res) => {
     category,
     minPrice: minPrice ? parseFloat(minPrice) : undefined,
     maxPrice: maxPrice ? parseFloat(maxPrice) : undefined,
-    limit: limit ? parseInt(limit) : undefined
+    limit: limit ? parseInt(limit) : undefined,
   };
 
   const products = await productService.searchProducts(q, filters);
@@ -167,7 +174,7 @@ exports.searchProducts = catchAsync(async (req, res) => {
   res.status(200).json({
     success: true,
     count: products.length,
-    data: products
+    data: products,
   });
 });
 
@@ -179,10 +186,10 @@ exports.getAllProducts = catchAsync(async (req, res) => {
 
   const filters = {
     category,
-    sortBy: sortBy || 'newest',
+    sortBy: sortBy || "newest",
     minPrice,
     maxPrice,
-    search
+    search,
   };
 
   const products = await productService.getAllProducts(filters);
@@ -190,6 +197,261 @@ exports.getAllProducts = catchAsync(async (req, res) => {
   res.status(200).json({
     success: true,
     count: products.length,
-    data: products
+    data: products,
   });
+});
+
+/* ADMIN SECTION */
+exports.getAlllProductsAdmin = catchAsync(async (req, res) => {
+  try {
+    const { page, limit } = req.query;
+    //get the total document count
+
+    const total_rows = await productService.countAllProducts();
+
+    const products = await productService.getAllProductsAdmin({
+      page: parseInt(page) || 1,
+      limit: parseInt(limit) || 10,
+    });
+
+    res.status(200).json({
+      success: true,
+      data: products,
+      pagination: {
+        total_rows: total_rows,
+        page: parseInt(page) || 1,
+        limit: parseInt(limit) || 10,
+        total: Math.ceil(total_rows / (parseInt(limit) || 10)),
+      },
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message || "Server Error",
+    });
+  }
+});
+
+exports.createProduct = catchAsync(async (req, res) => {
+  try {
+    const productData = req.body;
+
+    const {
+      title,
+      price,
+      summary,
+      description,
+      size, //optional
+      colors, //optional
+      discount,
+      category,
+      catelogue,
+    } = productData;
+
+    if (
+      !title ||
+      !price ||
+      //!size ||//optional
+      !summary ||
+      !description ||
+      !category ||
+      !discount ||
+      !catelogue
+    ) {
+      return res.status(StatusCodes.BAD_REQUEST).json({
+        success: false,
+        message: "Incomplete product data",
+      });
+    }
+    const { thumbnail, images } = req.files;
+
+    if (!thumbnail || images.length === 0) {
+      return res
+        .status(StatusCodes.NOT_FOUND)
+        .json({
+          message: "Thumbnail and Images are required",
+          statusCode: StatusCodes.NOT_FOUND,
+        });
+    }
+
+    const thumbnailRes = await uploadToCloudinary(
+      thumbnail[0].buffer,
+      `product-thumbnails/${thumbnail[0].originalname}`
+    );
+
+    let imagesUrl = [];
+
+    for (const img of images) {
+      const imgRes = await uploadToCloudinary(
+        img.buffer,
+        `product-images/${img.originalname}`
+      );
+      imagesUrl.push(imgRes.url);
+    }
+
+    if (!thumbnailRes.url || imagesUrl.length === 0) {
+      return res.status(StatusCodes.BAD_REQUEST).json({
+        success: false,
+        message: "Failed to upload thumbnail or images",
+        statusCode: StatusCodes.BAD_REQUEST,
+      });
+    }
+
+    const splitTitle = title.split(" ");
+    const sku = `FS-${splitTitle[1]}-${Math.floor(Math.random() * 1000)}`;
+
+    productData.thumbnail = thumbnailRes.url;
+    productData.images = imagesUrl;
+    productData.slug = title
+      .toLowerCase()
+      .replace(/\s+/g, "-")
+      .replace(/[^\w\-]+/g, "");
+    productData.price = parseFloat(price);
+    productData.size = size || null;
+    productData.colors = colors
+      ? JSON.stringify(colors)
+          .split(",")
+          .map((color) => color.trim())
+      : [];
+    productData.discount = discount ? parseFloat(discount) : 0;
+    productData.category = category || null;
+    productData.catelogue = catelogue || null;
+    productData.sku = sku || null;
+    productData.summary = summary || null;
+    productData.description = description || null;
+
+    const newProduct = await productService.createProduct(productData);
+
+    if (!newProduct) {
+      return res.status(StatusCodes.BAD_REQUEST).json({
+        success: false,
+        statusCode: StatusCodes.BAD_REQUEST,
+        message: "Failed to create product",
+      });
+    }
+
+    res.status(StatusCodes.CREATED).json({
+      success: true,
+      message: "Product created successfully",
+      statusCode: StatusCodes.CREATED,
+    });
+  } catch (error) {
+    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+      success: false,
+      message: error.message || "Server Error",
+      statusCode: StatusCodes.INTERNAL_SERVER_ERROR,
+    });
+  }
+});
+exports.editProduct = catchAsync(async (req, res) => {
+  try {
+    const { id } = req.params;
+    const productData = req.body;
+    //check if id and productData are provided
+    if (!id || !productData) {
+      return res.status(StatusCodes.BAD_REQUEST).json({
+        success: false,
+        message: "Product ID and data are required",
+      });
+    }
+
+    //scenarios where images are being updated
+    if (req.files) {
+      const { thumbnail, images } = req.files;
+
+      if (thumbnail) {
+        const thumbnailRes = await uploadToCloudinary(
+          thumbnail[0].buffer,
+          `product-thumbnails/${thumbnail[0].originalname}`
+        );
+        if (thumbnailRes.url) {
+          productData.thumbnail = thumbnailRes.url;
+        }
+      }
+      //NOTE: images is an array of files or urls, so we need to handle accordingly incase out of 5 only 3 are updated
+
+      // Get existing images from request body (URLs to keep)
+      const existingImages = productData.existingImages
+        ? JSON.parse(productData.existingImages)
+        : [];
+
+      if (images && images.length > 0) {
+        let newImagesUrl = [];
+        for (const img of images) {
+          const imgRes = await uploadToCloudinary(
+            img.buffer,
+            `product-images/${img.originalname}`
+          );
+          newImagesUrl.push(imgRes.url);
+        }
+        // Combine existing URLs with newly uploaded URLs
+        productData.images = [...existingImages, ...newImagesUrl];
+      } else {
+        // No new images, just keep existing ones
+        productData.images = existingImages;
+      }
+
+      // Clean up the temporary field
+      delete productData.existingImages;
+    }
+
+    // Add logic to update the product using productService
+    const updatedProduct = await productService.editProduct(id, productData);
+
+    if (!updatedProduct) {
+      return res.status(StatusCodes.BAD_REQUEST).json({
+        success: false,
+        message: "Failed to update product",
+        statusCode: StatusCodes.BAD_REQUEST,
+      });
+    }
+
+    res.status(StatusCodes.OK).json({
+      success: true,
+      message: "Product updated successfully",
+      data: updatedProduct,
+      statusCode: StatusCodes.OK,
+    });
+  } catch (error) {
+    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+      success: false,
+      message: error.message || "Server Error",
+      statusCode: StatusCodes.INTERNAL_SERVER_ERROR,
+    });
+  }
+});
+
+exports.deleteProduct = catchAsync(async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    if (!id) {
+      return res.status(StatusCodes.BAD_REQUEST).json({
+        success: false,
+        message: "Product ID is required",
+      });
+    }
+    const deletedProduct = await productService.deleteProduct(id);
+
+    console.log("Deleted Product:", deletedProduct);
+
+    if (!deletedProduct) {
+      return res.status(StatusCodes.BAD_REQUEST).json({
+        success: false,
+        message: "Failed to delete product",
+        statusCode: StatusCodes.BAD_REQUEST,
+      });
+    }
+    res.status(StatusCodes.OK).json({
+      success: true,
+      message: "Product deleted successfully",
+      statusCode: StatusCodes.OK,
+    });
+  } catch (error) {
+    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+      success: false,
+      message: error.message || "Server Error",
+      statusCode: StatusCodes.INTERNAL_SERVER_ERROR,
+    });
+  }
 });

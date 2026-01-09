@@ -5,8 +5,7 @@ const Address = require("../models/Address");
 
 class OrderService {
   async createOrder(orderData) {
-    const { items, shippingAddress, userId } =
-      orderData;
+    const { items, shippingAddress, userId } = orderData;
 
     // Validate and enrich items with product data
     const enrichedItems = await Promise.all(
@@ -43,6 +42,7 @@ class OrderService {
             thumbnail: product.thumbnail,
             price: product.price,
             discount: product.discount,
+            category: product.category,
           },
           quantity: item.qty,
           price: price,
@@ -83,19 +83,21 @@ class OrderService {
 
     // Associate with user if userId provided
     if (userId) {
-      
       orderObj.user = userId;
-      
+
       // Save shipping address to user's addresses for future reference
       try {
         const user = await User.findById(userId);
         if (user) {
           // Check if this address already exists
-          const existingAddresses = await Address.find({ _id: { $in: user.addresses } });
-          const addressExists = existingAddresses.some(addr => 
-            addr.name === shippingAddress.name &&
-            addr.address === shippingAddress.address &&
-            addr.contact === shippingAddress.contact
+          const existingAddresses = await Address.find({
+            _id: { $in: user.addresses },
+          });
+          const addressExists = existingAddresses.some(
+            (addr) =>
+              addr.name === shippingAddress.name &&
+              addr.address === shippingAddress.address &&
+              addr.contact === shippingAddress.contact
           );
 
           if (!addressExists) {
@@ -122,11 +124,9 @@ class OrderService {
       console.log("No userId provided - creating order as guest");
     }
 
-  
     const order = new Order(orderObj);
 
     await order.save();
-   
 
     // Update product stock
     await Promise.all(
@@ -167,6 +167,22 @@ class OrderService {
       .lean();
 
     return orders;
+  }
+
+  async getAllOrdersWithPagination(options = {}) {
+    const { skip = 0, limit = 10 } = options;
+    const query = {};
+
+    const [orders, total] = await Promise.all([
+      Order.find(query)
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit)
+        .populate("items.product", "title slug thumbnail price discount")
+        .lean(),
+      Order.countDocuments(query),
+    ]);
+    return { orders, total };
   }
 
   async getUserOrdersWithPagination(userId, options = {}) {

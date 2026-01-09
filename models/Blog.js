@@ -37,7 +37,7 @@ const blogSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User'
   },
-  categories: [String],
+  category: String,
   tags: [String],
   views: {
     type: Number,
@@ -69,7 +69,7 @@ blogSchema.pre('save', function(next) {
 // Indexes
 blogSchema.index({ slug: 1 });
 blogSchema.index({ isPublished: 1, publishedAt: -1 });
-blogSchema.index({ categories: 1 });
+blogSchema.index({ category: 1 });
 blogSchema.index({ id: 1 }, { unique: true });
 
 module.exports = mongoose.model('Blog', blogSchema);

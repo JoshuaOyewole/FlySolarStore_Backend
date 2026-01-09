@@ -2,7 +2,6 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const { validationResult } = require("express-validator");
 const User = require("../models/User");
-const { AppError } = require("../utils/appError");
 const catchAsync = require("../utils/catchAsync");
 const { sendEmail } = require("../utils/email");
 const crypto = require("crypto");
@@ -20,6 +19,13 @@ const sendTokenResponse = (user, statusCode, res) => {
 
   // Remove password from output
   user.password = undefined;
+  user.emailVerificationToken = undefined;
+  user.lastLogin = undefined;
+  user.dateOfBirth = undefined;
+  user.createdAt = undefined;
+  user.updatedAt = undefined;
+  user.loginAttempts = undefined;
+  user.isEmailVerified = undefined;
 
   res.cookie("token", token, {
     httpOnly: true,
@@ -46,7 +52,11 @@ const register = catchAsync(async (req, res, next) => {
   const errors = validationResult(req);
 
   if (!errors.isEmpty()) {
-    return next(new AppError("Validation failed", 400, errors.array()));
+    return res.status(400).json({
+      success: false,
+      message: "Validation failed",
+      errors: errors.array()
+    });
   }
 
   const { firstName, lastName, email, password } = req.body;
@@ -54,7 +64,10 @@ const register = catchAsync(async (req, res, next) => {
   // Check if user already exists
   const existingUser = await User.findOne({ email });
   if (existingUser) {
-    return next(new AppError("User already exists with this email", 400));
+    return res.status(400).json({
+      success: false,
+      message: "User already exists with this email"
+    });
   }
 
   // Prevent registration with disposable email addresses
@@ -66,22 +79,18 @@ const register = catchAsync(async (req, res, next) => {
   const emailDomain = email.split("@")[1];
 
   if (disposableEmailDomains.includes(emailDomain)) {
-    return next(
-      new AppError(
-        "Registration using disposable email addresses is not allowed",
-        400
-      )
-    );
+    return res.status(400).json({
+      success: false,
+      message: "Registration using disposable email addresses is not allowed"
+    });
   }
   // Validate password strength
   const passwordRegex = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d@$!%*?&]{8,}$/;
   if (!passwordRegex.test(password)) {
-    return next(
-      new AppError(
-        "Password must be at least 8 characters long and contain both letters and numbers",
-        400
-      )
-    );
+    return res.status(400).json({
+      success: false,
+      message: "Password must be at least 8 characters long and contain both letters and numbers"
+    });
   }
 
   // Create user
@@ -123,7 +132,11 @@ const login = catchAsync(async (req, res, next) => {
   // Check for validation errors
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
-    return next(new AppError("Validation failed", 400, errors.array()));
+    return res.status(400).json({
+      success: false,
+      message: "Validation failed",
+      errors: errors.array()
+    });
   }
 
   const { email, password } = req.body;
@@ -132,24 +145,26 @@ const login = catchAsync(async (req, res, next) => {
   const user = await User.findOne({ email }).select("+password");
 
   if (!user) {
-    return next(new AppError("Invalid credentials", 401));
+    return res.status(401).json({
+      success: false,
+      message: "Invalid credentials"
+    });
   }
 
   // Check if account is locked
   if (user.isLocked()) {
-    return next(
-      new AppError(
-        "Account is temporarily locked due to too many failed login attempts",
-        423
-      )
-    );
+    return res.status(423).json({
+      success: false,
+      message: "Account is temporarily locked due to too many failed login attempts"
+    });
   }
 
   // Check if account is active
   if (!user.isActive) {
-    return next(
-      new AppError("Account is deactivated. Please contact support.", 401)
-    );
+    return res.status(401).json({
+      success: false,
+      message: "Account is deactivated. Please contact support."
+    });
   }
 
   // Check password
@@ -165,7 +180,10 @@ const login = catchAsync(async (req, res, next) => {
     }
 
     await user.save();
-    return next(new AppError("Invalid credentials", 401));
+    return res.status(401).json({
+      success: false,
+      message: "Invalid credentials"
+    });
   }
 
   // Reset login attempts on successful login
@@ -197,6 +215,8 @@ const logout = catchAsync(async (req, res, next) => {
 // @route   GET /api/auth/me
 // @access  Private
 const getMe = catchAsync(async (req, res, next) => {
+
+  console.log("Authenticated user ID:", req.user.id);
   const user = await User.findById(req.user.id).populate("addresses");
 
   res.status(200).json({
@@ -214,7 +234,11 @@ const forgotPassword = catchAsync(async (req, res, next) => {
   // Check for validation errors
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
-    return next(new AppError("Validation failed", 400, errors.array()));
+    return res.status(400).json({
+      success: false,
+      message: "Validation failed",
+      errors: errors.array()
+    });
   }
 
   const { email } = req.body;
@@ -222,7 +246,10 @@ const forgotPassword = catchAsync(async (req, res, next) => {
   const user = await User.findOne({ email });
 
   if (!user) {
-    return next(new AppError("No user found with that email", 404));
+    return res.status(404).json({
+      success: false,
+      message: "No user found with that email"
+    });
   }
 
   // Generate reset token
@@ -253,7 +280,10 @@ const forgotPassword = catchAsync(async (req, res, next) => {
     user.passwordResetExpires = undefined;
     await user.save();
 
-    return next(new AppError("Email could not be sent", 500));
+    return res.status(500).json({
+      success: false,
+      message: "Email could not be sent"
+    });
   }
 });
 
@@ -264,7 +294,11 @@ const resetPassword = catchAsync(async (req, res, next) => {
   // Check for validation errors
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
-    return next(new AppError("Validation failed", 400, errors.array()));
+    return res.status(400).json({
+      success: false,
+      message: "Validation failed",
+      errors: errors.array()
+    });
   }
 
   const { token, password } = req.body;
@@ -275,7 +309,10 @@ const resetPassword = catchAsync(async (req, res, next) => {
   });
 
   if (!user) {
-    return next(new AppError("Invalid or expired reset token", 400));
+    return res.status(400).json({
+      success: false,
+      message: "Invalid or expired reset token"
+    });
   }
 
   // Set new password
@@ -295,7 +332,10 @@ const updatePassword = catchAsync(async (req, res, next) => {
   const { currentPassword, newPassword } = req.body;
 
   if (!currentPassword || !newPassword) {
-    return next(new AppError("Please provide current and new password", 400));
+    return res.status(400).json({
+      success: false,
+      message: "Please provide current and new password"
+    });
   }
 
   // Get user with password
@@ -305,7 +345,10 @@ const updatePassword = catchAsync(async (req, res, next) => {
   const isCurrentPasswordCorrect = await user.comparePassword(currentPassword);
 
   if (!isCurrentPasswordCorrect) {
-    return next(new AppError("Current password is incorrect", 400));
+    return res.status(400).json({
+      success: false,
+      message: "Current password is incorrect"
+    });
   }
 
   // Update password
@@ -322,14 +365,20 @@ const verifyEmail = catchAsync(async (req, res, next) => {
   const { token } = req.query;
 
   if (!token) {
-    return next(new AppError("Verification token is required", 400));
+    return res.status(400).json({
+      success: false,
+      message: "Verification token is required"
+    });
   }
 
   // Find user with matching token
   const user = await User.findOne({ emailVerificationToken: token });
 
   if (!user) {
-    return next(new AppError("Invalid or expired verification token", 400));
+    return res.status(400).json({
+      success: false,
+      message: "Invalid or expired verification token"
+    });
   }
 
   // Check if already verified
@@ -373,14 +422,20 @@ const updateProfile = catchAsync(async (req, res, next) => {
   const user = await User.findById(req.user.id);
 
   if (!user) {
-    return next(new AppError("User not found", 404));
+    return res.status(404).json({
+      success: false,
+      message: "User not found"
+    });
   }
 
   // Check if email is being changed and if it's already taken
   if (email && email !== user.email) {
     const existingUser = await User.findOne({ email });
     if (existingUser) {
-      return next(new AppError("Email already in use", 400));
+      return res.status(400).json({
+        success: false,
+        message: "Email already in use"
+      });
     }
   }
 

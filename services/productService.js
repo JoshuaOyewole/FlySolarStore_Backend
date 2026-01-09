@@ -1,16 +1,16 @@
-const Product = require('../models/Product');
+const Product = require("../models/Product");
 
 class ProductService {
   async getFlashDeals() {
     const products = await Product.find({
-      'for.type': 'flash-deals',
+      catelogue: "flash-deals",
       isActive: true,
-      stock: { $gt: 0 }
+      stock: { $gt: 0 },
     })
-    .sort({ discount: -1 })
-    .limit(12)
-    .select('-__v')
-    .lean();
+      .sort({ discount: -1 })
+      .limit(12)
+      .select("-__v")
+      .lean();
 
     return products;
   }
@@ -18,28 +18,28 @@ class ProductService {
   async getJustForYou(limit = 12) {
     // Algorithm: Mix of popular (by views) and highly rated products
     const products = await Product.find({
-      'for.type': 'just-for-you',
+      catelogue: "just-for-you",
       isActive: true,
-      stock: { $gt: 0 }
+      stock: { $gt: 0 },
     })
-    .sort({ views: -1, rating: -1 })
-    .limit(limit)
-    .select('-__v')
-    .lean();
+      .sort({ views: -1, rating: -1 })
+      .limit(limit)
+      .select("-__v")
+      .lean();
 
     return products;
   }
 
   async getNewArrivals() {
     const products = await Product.find({
-      'for.type': 'new-arrivals',
+      catelogue: "new-arrivals",
       isActive: true,
-      stock: { $gt: 0 }
+      stock: { $gt: 0 },
     })
-    .sort({ createdAt: -1 })
-    .limit(12)
-    .select('-__v')
-    .lean();
+      .sort({ createdAt: -1 })
+      .limit(12)
+      .select("-__v")
+      .lean();
 
     return products;
   }
@@ -48,53 +48,50 @@ class ProductService {
     const products = await Product.find({
       isFeatured: true,
       isActive: true,
-      stock: { $gt: 0 }
+      stock: { $gt: 0 },
     })
-    .sort({ rating: -1, views: -1 })
-    .limit(12)
-    .select('-__v')
-    .lean();
+      .sort({ rating: -1, views: -1 })
+      .limit(12)
+      .select("-__v")
+      .lean();
 
     return products;
   }
 
   async getFeaturedGridProducts() {
     const products = await Product.find({
-      'for.type': 'featured-grid',
+      catelogue: "featured-grid",
       isActive: true,
-      stock: { $gt: 0 }
+      stock: { $gt: 0 },
     })
-    .sort({ views: -1, rating: -1 })
-    .limit(6)
-    .select('-__v')
-    .lean();
+      .sort({ views: -1, rating: -1 })
+      .limit(6)
+      .select("-__v")
+      .lean();
 
     return products;
   }
 
   async getProductsByCategory(category, limit = 12) {
     const products = await Product.find({
-      categories: category,
+      category: category,
       isActive: true,
-      stock: { $gt: 0 }
+      stock: { $gt: 0 },
     })
-    .sort({ rating: -1 })
-    .limit(limit)
-    .select('-__v')
-    .lean();
+      .sort({ rating: -1 })
+      .limit(limit)
+      .select("-__v")
+      .lean();
 
     return products;
   }
 
   async getProductById(id) {
-    const product = await Product.findById(id).select('-__v');
-    
+    const product = await Product.findById(id).select("-__v");
+
     if (product) {
       // Increment views without triggering save hooks
-      await Product.updateOne(
-        { _id: product._id },
-        { $inc: { views: 1 } }
-      );
+      await Product.updateOne({ _id: product._id }, { $inc: { views: 1 } });
       product.views += 1; // Update in-memory for return
     }
 
@@ -102,31 +99,30 @@ class ProductService {
   }
 
   async getProductBySlug(slug) {
-    const product = await Product.findOne({ slug, isActive: true }).select('-__v');
-    
+    const product = await Product.findOne({ slug, isActive: true }).select(
+      "-__v"
+    );
+
     if (product) {
       // Increment views without triggering save hooks
-      await Product.updateOne(
-        { _id: product._id },
-        { $inc: { views: 1 } }
-      );
+      await Product.updateOne({ _id: product._id }, { $inc: { views: 1 } });
       product.views += 1; // Update in-memory for return
     }
 
     return product;
   }
 
-  async getRelatedProducts(productId, categories, limit = 8) {
+  async getRelatedProducts(productId, category, limit = 8) {
     const products = await Product.find({
       _id: { $ne: productId },
-      categories: { $in: categories },
+      category: category,
       isActive: true,
-      stock: { $gt: 0 }
+      stock: { $gt: 0 },
     })
-    .sort({ rating: -1, views: -1 })
-    .limit(limit)
-    .select('-__v')
-    .lean();
+      .sort({ rating: -1, views: -1 })
+      .limit(limit)
+      .select("-__v")
+      .lean();
 
     return products;
   }
@@ -136,15 +132,15 @@ class ProductService {
       isActive: true,
       stock: { $gt: 0 },
       $or: [
-        { title: { $regex: query, $options: 'i' } },
-        { description: { $regex: query, $options: 'i' } },
-        { categories: { $regex: query, $options: 'i' } },
-        { tags: { $regex: query, $options: 'i' } }
-      ]
+        { title: { $regex: query, $options: "i" } },
+        { description: { $regex: query, $options: "i" } },
+        { category: { $regex: query, $options: "i" } },
+        { tags: { $regex: query, $options: "i" } },
+      ],
     };
 
     if (filters.category) {
-      searchCriteria.categories = filters.category;
+      searchCriteria.category = filters.category;
     }
 
     if (filters.minPrice || filters.maxPrice) {
@@ -156,7 +152,7 @@ class ProductService {
     const products = await Product.find(searchCriteria)
       .sort({ rating: -1, views: -1 })
       .limit(filters.limit || 50)
-      .select('-__v')
+      .select("-__v")
       .lean();
 
     return products;
@@ -165,15 +161,15 @@ class ProductService {
   async getAllProducts(filters = {}) {
     const query = {
       isActive: true,
-      stock: { $gt: 0 }
+      stock: { $gt: 0 },
     };
 
     // Filter by category
-    if (filters.category && filters.category !== 'All Products') {
-      if (filters.category === 'On Sale') {
+    if (filters.category && filters.category !== "All Products") {
+      if (filters.category === "On Sale") {
         query.discount = { $gt: 0 };
       } else {
-        query.categories = filters.category;
+        query.category = filters.category;
       }
     }
 
@@ -187,23 +183,23 @@ class ProductService {
     // Search query
     if (filters.search) {
       query.$or = [
-        { title: { $regex: filters.search, $options: 'i' } },
-        { categories: { $regex: filters.search, $options: 'i' } }
+        { title: { $regex: filters.search, $options: "i" } },
+        { category: { $regex: filters.search, $options: "i" } },
       ];
     }
 
     let sortOptions = {};
     switch (filters.sortBy) {
-      case 'price-low':
+      case "price-low":
         sortOptions = { price: 1 };
         break;
-      case 'price-high':
+      case "price-high":
         sortOptions = { price: -1 };
         break;
-      case 'popular':
+      case "popular":
         sortOptions = { rating: -1, views: -1 };
         break;
-      case 'newest':
+      case "newest":
       default:
         sortOptions = { createdAt: -1 };
         break;
@@ -211,10 +207,48 @@ class ProductService {
 
     const products = await Product.find(query)
       .sort(sortOptions)
-      .select('-__v')
+      .select("-__v")
       .lean();
 
     return products;
+  }
+
+  async getAllProductsAdmin({ limit, page }) {
+    //fetch all products with pagination for admin dashboard
+
+    const products = await Product.find()
+      .sort({ createdAt: -1 })
+      .skip((page - 1) * limit)
+      .limit(limit)
+      .select(" -colors -discount -reviews -rating -for -createdAt -updatedAt")
+      .lean();
+
+    return products;
+  }
+
+  async countAllProducts() {
+    const count = await Product.countDocuments();
+    return count;
+  }
+
+  async createProduct(data) {
+    const newProduct = new Product(data);
+    await newProduct.save();
+    return newProduct;
+  }
+
+  async editProduct(id, data) {
+    const updatedProduct = await Product.updateOne(
+      { _id: id },
+      { $set: data },
+      { new: true }
+    );
+    return updatedProduct;
+  }
+
+  async deleteProduct(id) {
+    const res = await Product.findByIdAndDelete(id);
+    return res;
   }
 }
 
