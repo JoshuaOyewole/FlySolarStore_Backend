@@ -356,7 +356,7 @@ const sendEmail = async ({ to, subject, template, data }) => {
     }
 
     const mailOptions = {
-      from: `"FlySolarStore" <${process.env.EMAIL_USER}>`,
+      from: `"FlySolarStore" <${process.env.EMAIL_FROM}>`,
       to,
       subject,
       html
