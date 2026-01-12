@@ -3,12 +3,14 @@ const catchAsync = require("../utils/catchAsync");
 const AppError = require("../utils/appError");
 const { sendOrderConfirmation } = require("../utils/email");
 const { StatusCodes } = require("http-status-codes");
-
+const jwt = require("jsonwebtoken");
 // @desc    Create new order
 // @route   POST /api/orders
 // @access  Public (with optional auth)
 exports.createOrder = catchAsync(async (req, res, next) => {
   const { items, shippingAddress } = req.body;
+
+  let token = null;
 
   // Validation
   if (!items || items.length === 0) {
@@ -19,8 +21,21 @@ exports.createOrder = catchAsync(async (req, res, next) => {
     return next(new AppError("Shipping address is required", 400));
   }
 
+  if (
+    req.headers.authorization &&
+    req.headers.authorization.startsWith("Bearer")
+  ) {
+    // Set token from Bearer token in header
+    token = req.headers.authorization.split(" ")[1];
+  } else if (req.cookies && req.cookies.token) {
+    // Set token from cookie
+    token = req.cookies.token;
+  }
+
+  const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
   // Use authenticated user's ID if available, otherwise allow guest checkout
-  const userId = req.user ? req.user._id : null;
+  const userId = decoded ? decoded.id : null;
 
   // Create order with optional user association
   const order = await orderService.createOrder({

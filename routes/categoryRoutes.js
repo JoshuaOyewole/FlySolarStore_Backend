@@ -24,7 +24,7 @@ router.delete(
   adminOnly,
   deleteCategory
 );
-router.get("/", getTokenFromHeaders, adminOnly, getAllCategories);
+router.get("/", getAllCategories);
 router.get("/:categoryId", getTokenFromHeaders, adminOnly, getCategoryById);
 
 module.exports = router;

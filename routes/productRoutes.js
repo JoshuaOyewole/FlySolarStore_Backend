@@ -17,7 +17,7 @@ const {
   deleteProduct,
 } = require("../controllers/productController");
 const { getTokenFromHeaders, adminOnly } = require("../middleware/auth");
-const productImageUpload = require("../middleware/upload");
+const {productImageUpload} = require("../middleware/upload");
 // GET /api/products - Get all products with filters
 router.get("/", getAllProducts);
 

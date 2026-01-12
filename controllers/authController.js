@@ -55,7 +55,7 @@ const register = catchAsync(async (req, res, next) => {
     return res.status(400).json({
       success: false,
       message: "Validation failed",
-      errors: errors.array()
+      errors: errors.array(),
     });
   }
 
@@ -66,7 +66,7 @@ const register = catchAsync(async (req, res, next) => {
   if (existingUser) {
     return res.status(400).json({
       success: false,
-      message: "User already exists with this email"
+      message: "User already exists with this email",
     });
   }
 
@@ -81,7 +81,7 @@ const register = catchAsync(async (req, res, next) => {
   if (disposableEmailDomains.includes(emailDomain)) {
     return res.status(400).json({
       success: false,
-      message: "Registration using disposable email addresses is not allowed"
+      message: "Registration using disposable email addresses is not allowed",
     });
   }
   // Validate password strength
@@ -89,7 +89,8 @@ const register = catchAsync(async (req, res, next) => {
   if (!passwordRegex.test(password)) {
     return res.status(400).json({
       success: false,
-      message: "Password must be at least 8 characters long and contain both letters and numbers"
+      message:
+        "Password must be at least 8 characters long and contain both letters and numbers",
     });
   }
 
@@ -128,14 +129,14 @@ const register = catchAsync(async (req, res, next) => {
 // @desc    Login user
 // @route   POST /api/auth/login
 // @access  Public
-const login = catchAsync(async (req, res, next) => {
+const login = catchAsync(async (req, res) => {
   // Check for validation errors
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
     return res.status(400).json({
       success: false,
       message: "Validation failed",
-      errors: errors.array()
+      errors: errors.array(),
     });
   }
 
@@ -147,7 +148,7 @@ const login = catchAsync(async (req, res, next) => {
   if (!user) {
     return res.status(401).json({
       success: false,
-      message: "Invalid credentials"
+      message: "Invalid credentials",
     });
   }
 
@@ -155,7 +156,8 @@ const login = catchAsync(async (req, res, next) => {
   if (user.isLocked()) {
     return res.status(423).json({
       success: false,
-      message: "Account is temporarily locked due to too many failed login attempts"
+      message:
+        "Account is temporarily locked due to too many failed login attempts",
     });
   }
 
@@ -163,7 +165,7 @@ const login = catchAsync(async (req, res, next) => {
   if (!user.isActive) {
     return res.status(401).json({
       success: false,
-      message: "Account is deactivated. Please contact support."
+      message: "Account is deactivated. Please contact support.",
     });
   }
 
@@ -182,7 +184,7 @@ const login = catchAsync(async (req, res, next) => {
     await user.save();
     return res.status(401).json({
       success: false,
-      message: "Invalid credentials"
+      message: "Invalid credentials",
     });
   }
 
@@ -191,7 +193,6 @@ const login = catchAsync(async (req, res, next) => {
   user.lockUntil = undefined;
   user.lastLogin = new Date();
   await user.save();
-
   sendTokenResponse(user, 200, res);
 });
 
@@ -215,7 +216,6 @@ const logout = catchAsync(async (req, res, next) => {
 // @route   GET /api/auth/me
 // @access  Private
 const getMe = catchAsync(async (req, res, next) => {
-
   console.log("Authenticated user ID:", req.user.id);
   const user = await User.findById(req.user.id).populate("addresses");
 
@@ -237,7 +237,7 @@ const forgotPassword = catchAsync(async (req, res, next) => {
     return res.status(400).json({
       success: false,
       message: "Validation failed",
-      errors: errors.array()
+      errors: errors.array(),
     });
   }
 
@@ -248,7 +248,7 @@ const forgotPassword = catchAsync(async (req, res, next) => {
   if (!user) {
     return res.status(404).json({
       success: false,
-      message: "No user found with that email"
+      message: "No user found with that email",
     });
   }
 
@@ -282,7 +282,7 @@ const forgotPassword = catchAsync(async (req, res, next) => {
 
     return res.status(500).json({
       success: false,
-      message: "Email could not be sent"
+      message: "Email could not be sent",
     });
   }
 });
@@ -297,7 +297,7 @@ const resetPassword = catchAsync(async (req, res, next) => {
     return res.status(400).json({
       success: false,
       message: "Validation failed",
-      errors: errors.array()
+      errors: errors.array(),
     });
   }
 
@@ -311,7 +311,7 @@ const resetPassword = catchAsync(async (req, res, next) => {
   if (!user) {
     return res.status(400).json({
       success: false,
-      message: "Invalid or expired reset token"
+      message: "Invalid or expired reset token",
     });
   }
 
@@ -334,7 +334,7 @@ const updatePassword = catchAsync(async (req, res, next) => {
   if (!currentPassword || !newPassword) {
     return res.status(400).json({
       success: false,
-      message: "Please provide current and new password"
+      message: "Please provide current and new password",
     });
   }
 
@@ -347,7 +347,7 @@ const updatePassword = catchAsync(async (req, res, next) => {
   if (!isCurrentPasswordCorrect) {
     return res.status(400).json({
       success: false,
-      message: "Current password is incorrect"
+      message: "Current password is incorrect",
     });
   }
 
@@ -367,7 +367,7 @@ const verifyEmail = catchAsync(async (req, res, next) => {
   if (!token) {
     return res.status(400).json({
       success: false,
-      message: "Verification token is required"
+      message: "Verification token is required",
     });
   }
 
@@ -377,7 +377,7 @@ const verifyEmail = catchAsync(async (req, res, next) => {
   if (!user) {
     return res.status(400).json({
       success: false,
-      message: "Invalid or expired verification token"
+      message: "Invalid or expired verification token",
     });
   }
 
@@ -424,7 +424,7 @@ const updateProfile = catchAsync(async (req, res, next) => {
   if (!user) {
     return res.status(404).json({
       success: false,
-      message: "User not found"
+      message: "User not found",
     });
   }
 
@@ -434,7 +434,7 @@ const updateProfile = catchAsync(async (req, res, next) => {
     if (existingUser) {
       return res.status(400).json({
         success: false,
-        message: "Email already in use"
+        message: "Email already in use",
       });
     }
   }

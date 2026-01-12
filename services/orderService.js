@@ -133,7 +133,7 @@ class OrderService {
       enrichedItems.map(async (item) => {
         await Product.findByIdAndUpdate(item.product, {
           $inc: { stock: -item.quantity },
-        });
+        })
       })
     );
 

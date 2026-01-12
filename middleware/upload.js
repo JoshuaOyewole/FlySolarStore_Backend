@@ -3,7 +3,6 @@ const multer = require("multer");
 // memory storage (best if you upload to S3 / Cloudinary)
 const storage = multer.memoryStorage();
 
-
 const upload = multer({
   storage,
   limits: {
@@ -22,4 +21,15 @@ const productImageUpload = upload.fields([
   { name: "images", maxCount: 5 },
 ]);
 
-module.exports = productImageUpload;
+const blogImageUpload = upload.fields([
+  { name: "thumbnail", maxCount: 1 },
+  { name: "coverImg", maxCount: 1 },
+]);
+
+const bannerImageUpload = upload.single("image");
+
+module.exports = {
+  productImageUpload,
+  blogImageUpload,
+  bannerImageUpload,
+};

@@ -1,6 +1,15 @@
 const Banner = require('../models/Banner');
 
 class BannerService {
+  async getAllBanners() {
+    const banners = await Banner.find()
+    .sort({ createdAt: -1 })
+    .select('-__v')
+    .lean();
+
+    return banners;
+  }
+
   async getHeroBanners() {
     const banners = await Banner.find({
       type: 'hero'
@@ -30,9 +39,10 @@ class BannerService {
   }
 
   async updateBanner(id, data) {
+  
     const banner = await Banner.findByIdAndUpdate(
       id,
-      data,
+      {$set: data},
       { new: true, runValidators: true }
     );
     return banner;

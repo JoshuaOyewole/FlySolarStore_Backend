@@ -266,12 +266,10 @@ exports.createProduct = catchAsync(async (req, res) => {
     const { thumbnail, images } = req.files;
 
     if (!thumbnail || images.length === 0) {
-      return res
-        .status(StatusCodes.NOT_FOUND)
-        .json({
-          message: "Thumbnail and Images are required",
-          statusCode: StatusCodes.NOT_FOUND,
-        });
+      return res.status(StatusCodes.NOT_FOUND).json({
+        message: "Thumbnail and Images are required",
+        statusCode: StatusCodes.NOT_FOUND,
+      });
     }
 
     const thumbnailRes = await uploadToCloudinary(
@@ -286,10 +284,10 @@ exports.createProduct = catchAsync(async (req, res) => {
         img.buffer,
         `product-images/${img.originalname}`
       );
-      imagesUrl.push(imgRes.url);
+      imagesUrl.push(imgRes.secure_url);
     }
 
-    if (!thumbnailRes.url || imagesUrl.length === 0) {
+    if (!thumbnailRes.secure_url || imagesUrl.length === 0) {
       return res.status(StatusCodes.BAD_REQUEST).json({
         success: false,
         message: "Failed to upload thumbnail or images",
@@ -300,7 +298,7 @@ exports.createProduct = catchAsync(async (req, res) => {
     const splitTitle = title.split(" ");
     const sku = `FS-${splitTitle[1]}-${Math.floor(Math.random() * 1000)}`;
 
-    productData.thumbnail = thumbnailRes.url;
+    productData.thumbnail = thumbnailRes.secure_url;
     productData.images = imagesUrl;
     productData.slug = title
       .toLowerCase()
@@ -364,8 +362,8 @@ exports.editProduct = catchAsync(async (req, res) => {
           thumbnail[0].buffer,
           `product-thumbnails/${thumbnail[0].originalname}`
         );
-        if (thumbnailRes.url) {
-          productData.thumbnail = thumbnailRes.url;
+        if (thumbnailRes.secure_url) {
+          productData.thumbnail = thumbnailRes.secure_url;
         }
       }
       //NOTE: images is an array of files or urls, so we need to handle accordingly incase out of 5 only 3 are updated
@@ -382,7 +380,7 @@ exports.editProduct = catchAsync(async (req, res) => {
             img.buffer,
             `product-images/${img.originalname}`
           );
-          newImagesUrl.push(imgRes.url);
+          newImagesUrl.push(imgRes.secure_url);
         }
         // Combine existing URLs with newly uploaded URLs
         productData.images = [...existingImages, ...newImagesUrl];
@@ -432,8 +430,6 @@ exports.deleteProduct = catchAsync(async (req, res) => {
       });
     }
     const deletedProduct = await productService.deleteProduct(id);
-
-    console.log("Deleted Product:", deletedProduct);
 
     if (!deletedProduct) {
       return res.status(StatusCodes.BAD_REQUEST).json({
