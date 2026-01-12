@@ -47,7 +47,9 @@ exports.createOrder = catchAsync(async (req, res, next) => {
   // Send invoice email
   try {
     await sendOrderConfirmation(order);
-    await orderService.markInvoiceSent(order._id);
+    const markRes = await orderService.markInvoiceSent(order._id);
+    order.invoiceSent = markRes.invoiceSent;
+    order.invoiceSentAt = markRes.invoiceSentAt;
   } catch (emailError) {
     console.error("Failed to send order confirmation email:", emailError);
     // Don't fail the order creation if email fails

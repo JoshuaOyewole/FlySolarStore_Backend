@@ -12,3 +12,5 @@ yarn-error.log*
 ORDER_SYSTEM_SUMMARY.md
 
 **/.md
+
+.env.local

@@ -1,38 +1,40 @@
-const nodemailer = require('nodemailer');
+const nodemailer = require("nodemailer");
 
-// Email transporter configuration  
+// Email transporter configuration
 const createTransporter = () => {
   // Check if email credentials are configured
   if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
-    console.warn('⚠️  Email credentials not configured. Emails will not be sent.');
-    console.warn('⚠️  Please set EMAIL_USER and EMAIL_PASS in your .env file');
+    console.warn(
+      "⚠️  Email credentials not configured. Emails will not be sent."
+    );
+    console.warn("⚠️  Please set EMAIL_USER and EMAIL_PASS in your .env file");
     return null;
   }
 
   // Nodemailer v7.x+ uses default export
   const mailerModule = nodemailer.default || nodemailer;
-  
-  if (typeof mailerModule.createTransport !== 'function') {
-    console.error('Nodemailer createTransport is not available');
+
+  if (typeof mailerModule.createTransport !== "function") {
+    console.error("Nodemailer createTransport is not available");
     return null;
   }
 
   const port = parseInt(process.env.EMAIL_PORT) || 587;
   const isSecure = port === 465;
-  
+
   const transportConfig = {
     host: process.env.EMAIL_HOST,
     port: port,
     secure: isSecure, // true for 465, false for other ports (587)
     auth: {
       user: process.env.EMAIL_USER,
-      pass: process.env.EMAIL_PASS
+      pass: process.env.EMAIL_PASS,
     },
     tls: {
       // Don't fail on invalid certs
       rejectUnauthorized: false,
       // Minimum TLS version
-      minVersion: 'TLSv1.2'
+      minVersion: "TLSv1.2",
     },
     // Connection timeout (10 seconds)
     connectionTimeout: 10000,
@@ -41,35 +43,40 @@ const createTransporter = () => {
     // Socket timeout (10 seconds)
     socketTimeout: 10000,
     // Enable debug logs
-    debug: process.env.NODE_ENV === 'development',
-    logger: process.env.NODE_ENV === 'development'
+    debug: process.env.NODE_ENV === "development",
+    logger: process.env.NODE_ENV === "development",
   };
 
   // For port 587, explicitly enable STARTTLS
   if (port === 587) {
     transportConfig.requireTLS = true;
   }
-  
-  
+
   return mailerModule.createTransport(transportConfig);
 };
 
 // Send email function
-const sendEmail = async ({ to, subject, template, data }) => {
+const sendEmail = async ({
+  to,
+  subject,
+  template,
+  data,
+  EMAIL_FROM = process.env.EMAIL_FROM,
+}) => {
   try {
     const transporter = createTransporter();
-    
+
     // If transporter is null (email not configured), skip sending
     if (!transporter) {
-      console.log('📧 Email not sent (service not configured):', subject);
-      return { success: false, message: 'Email service not configured' };
+      console.log("📧 Email not sent (service not configured):", subject);
+      return { success: false, message: "Email service not configured" };
     }
-    
+
     // For now, sending simple HTML email
     // In production, you'd use a template engine like Handlebars
-    let html = '';
-    
-    if (template === 'test') {
+    let html = "";
+
+    if (template === "test") {
       html = `
         <!DOCTYPE html>
         <html>
@@ -95,7 +102,9 @@ const sendEmail = async ({ to, subject, template, data }) => {
                 <p><strong>Congratulations!</strong> Your email service is configured correctly and working properly.</p>
                 <div class="info-box">
                   <p><strong>Message:</strong> ${data.message}</p>
-                  <p><strong>Sent at:</strong> ${new Date(data.timestamp).toLocaleString()}</p>
+                  <p><strong>Sent at:</strong> ${new Date(
+                    data.timestamp
+                  ).toLocaleString()}</p>
                 </div>
                 <p>This confirms that:</p>
                 <ul>
@@ -120,14 +129,14 @@ const sendEmail = async ({ to, subject, template, data }) => {
           </body>
         </html>
       `;
-    } else if (template === 'emailVerification') {
+    } else if (template === "emailVerification") {
       html = `
         <h2>Welcome to FlySolarStore, ${data.name}!</h2>
         <p>Please verify your email address by clicking the link below:</p>
         <a href="${data.verificationLink}">Verify Email</a>
         <p>If you didn't create an account, please ignore this email.</p>
       `;
-    } else if (template === 'passwordReset') {
+    } else if (template === "passwordReset") {
       html = `
         <h2>Password Reset Request</h2>
         <p>Hello ${data.name},</p>
@@ -136,10 +145,10 @@ const sendEmail = async ({ to, subject, template, data }) => {
         <p>This link will expire in 10 minutes.</p>
         <p>If you didn't request this, please ignore this email.</p>
       `;
-    } 
-  
-    else if (template === 'orderConfirmation') {
-      const itemsHtml = data.items.map(item => `
+    } else if (template === "orderConfirmation") {
+      const itemsHtml = data.items
+        .map(
+          (item) => `
         <tr>
           <td class="item-name">
             <div style="display: flex; align-items: center; gap: 12px;">
@@ -147,26 +156,36 @@ const sendEmail = async ({ to, subject, template, data }) => {
                 <span style="font-size: 22px;">⚡</span>
               </div>
               <div>
-                <div style="font-weight: 600; color: #111827; margin-bottom: 2px;">${item.productSnapshot.title}</div>
-                <div style="font-size: 12px; color: #9ca3af;">SKU: ${item.productSnapshot._id || 'N/A'}</div>
+                <div style="font-weight: 600; color: #111827; margin-bottom: 2px;">${
+                  item.productSnapshot.title
+                }</div>
+                <div style="font-size: 12px; color: #9ca3af;">SKU: ${
+                  item.productSnapshot._id || "N/A"
+                }</div>
               </div>
             </div>
           </td>
           <td class="item-qty">
-            <span style="background-color: #f3f4f6; padding: 4px 12px; border-radius: 12px; font-weight: 600;">×${item.quantity}</span>
+            <span style="background-color: #f3f4f6; padding: 4px 12px; border-radius: 12px; font-weight: 600;">×${
+              item.quantity
+            }</span>
           </td>
           <td class="item-price">
-            ₦${item.subtotal.toLocaleString('en-NG', { minimumFractionDigits: 2 })}
+            ₦${item.subtotal.toLocaleString("en-NG", {
+              minimumFractionDigits: 2,
+            })}
           </td>
         </tr>
-      `).join('');
+      `
+        )
+        .join("");
 
       // Determine shipping method text
       //let shippingMethodText = 'Shipping';
       //let shippingLocation = '';
       if (data.shippingCost === 0 || data.shippingCost < 10000) {
-        shippingMethodText = 'Shipping: Pickup (LAGOS)';
-       /*  shippingLocation = 'Lagos - Alaba International Market'; */
+        shippingMethodText = "Shipping: Pickup (LAGOS)";
+        /*  shippingLocation = 'Lagos - Alaba International Market'; */
       }
 
       html = `
@@ -247,7 +266,9 @@ const sendEmail = async ({ to, subject, template, data }) => {
                   </div>
                   
                   <!-- Greeting -->
-                  <p class="greeting">Hello ${data.shippingAddress.name.split(' ')[0]},</p>
+                  <p class="greeting">Hello ${
+                    data.shippingAddress.name.split(" ")[0]
+                  },</p>
                   
                   <!-- Message -->
                   <p class="message">
@@ -280,7 +301,10 @@ const sendEmail = async ({ to, subject, template, data }) => {
                       </div>
                       <div class="detail-row" style="border-top: 1px solid #e5e7eb; margin-top: 12px; padding-top: 12px;">
                         <span class="detail-label">Amount to Pay:</span>
-                        <span class="detail-value" style="font-size: 18px; color: #333;">₦${data.total.toLocaleString('en-NG', { minimumFractionDigits: 2 })}</span>
+                        <span class="detail-value" style="font-size: 18px; color: #333;">₦${data.total.toLocaleString(
+                          "en-NG",
+                          { minimumFractionDigits: 2 }
+                        )}</span>
                       </div>
                     </div>
                   </div>
@@ -292,11 +316,17 @@ const sendEmail = async ({ to, subject, template, data }) => {
                     <div class="order-info">
                       <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
                         <span>Order Number:</span>
-                        <strong> #${data.orderNumber.split('-').slice(1).join('-') || data.orderNumber}</strong>
+                        <strong> #${
+                          data.orderNumber.split("-").slice(1).join("-") ||
+                          data.orderNumber
+                        }</strong>
                       </div>
                       <div style="display: flex; justify-content: space-between;">
                         <span>Order Date:</span>
-                        <strong> ${new Date(data.createdAt).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</strong>
+                        <strong> ${new Date(data.createdAt).toLocaleDateString(
+                          "en-US",
+                          { month: "long", day: "numeric", year: "numeric" }
+                        )}</strong>
                       </div>
                     </div>
                     
@@ -318,15 +348,23 @@ const sendEmail = async ({ to, subject, template, data }) => {
                     <div class="totals-section">
                       <div class="total-row subtotal">
                         <span>Subtotal:</span>
-                        <span style="font-weight: 600; color: #111827;">₦${data.subtotal.toLocaleString('en-NG', { minimumFractionDigits: 2 })}</span>
+                        <span style="font-weight: 600; color: #111827;">₦${data.subtotal.toLocaleString(
+                          "en-NG",
+                          { minimumFractionDigits: 2 }
+                        )}</span>
                       </div>
                       <div class="total-row shipping">
                         <span>Pickup Cost (Within Lagos):</span>
-                        <span style="font-weight: 600; color: #111827;">₦${data.shippingCost.toLocaleString('en-NG', { minimumFractionDigits: 2 })}</span>
+                        <span style="font-weight: 600; color: #111827;">₦${data.shippingCost.toLocaleString(
+                          "en-NG",
+                          { minimumFractionDigits: 2 }
+                        )}</span>
                       </div>
                       <div class="total-row grand-total">
                         <span>Total Amount:</span>
-                        <span>₦${data.total.toLocaleString('en-NG', { minimumFractionDigits: 2 })}</span>
+                        <span>₦${data.total.toLocaleString("en-NG", {
+                          minimumFractionDigits: 2,
+                        })}</span>
                       </div>
                     </div>
                   </div>
@@ -356,17 +394,17 @@ const sendEmail = async ({ to, subject, template, data }) => {
     }
 
     const mailOptions = {
-      from: `"FlySolarStore" <${process.env.EMAIL_FROM}>`,
+      from: `"FlySolarStore" <${EMAIL_FROM}>`,
       to,
       subject,
-      html
+      html,
     };
 
     const result = await transporter.sendMail(mailOptions);
-    console.log('Email sent successfully:', result.messageId);
+    console.log("Email sent successfully:", result.messageId);
     return result;
   } catch (error) {
-    console.error('Error sending email:', error);
+    console.error("Error sending email:", error);
     throw error;
   }
 };
@@ -377,12 +415,13 @@ const sendOrderConfirmation = async (order) => {
     const result = await sendEmail({
       to: order.shippingAddress.email,
       subject: `Order Confirmation - ${order.orderNumber}`,
-      template: 'orderConfirmation',
-      data: order
+      template: "orderConfirmation",
+      data: order,
+      EMAIL_FROM: process.env.EMAIL_FROM_INVOICE,
     });
     return result;
   } catch (error) {
-    console.error('Failed to send order confirmation:', error);
+    console.error("Failed to send order confirmation:", error);
     // Don't throw error - just return null to allow order creation to succeed
     return null;
   }
