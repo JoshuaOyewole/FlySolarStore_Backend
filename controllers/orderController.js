@@ -31,11 +31,13 @@ exports.createOrder = catchAsync(async (req, res, next) => {
     // Set token from cookie
     token = req.cookies.token;
   }
+  let userId = null;
 
-  const decoded = jwt.verify(token, process.env.JWT_SECRET);
-
-  // Use authenticated user's ID if available, otherwise allow guest checkout
-  const userId = decoded ? decoded.id : null;
+  if (token) {
+    console.log("Token in createOrder:", token);
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    userId = decoded.id;
+  }
 
   // Create order with optional user association
   const order = await orderService.createOrder({

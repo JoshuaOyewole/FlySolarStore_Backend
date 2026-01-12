@@ -129,13 +129,13 @@ class OrderService {
     await order.save();
 
     // Update product stock
-    await Promise.all(
+  /*   await Promise.all(
       enrichedItems.map(async (item) => {
         await Product.findByIdAndUpdate(item.product, {
           $inc: { stock: -item.quantity },
         })
       })
-    );
+    ); */
 
     return order;
   }
