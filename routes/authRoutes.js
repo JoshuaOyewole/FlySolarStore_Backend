@@ -1,10 +1,11 @@
 const express = require('express');
 const router = express.Router();
-const { register, login, logout, getMe, verifyEmail, forgotPassword, resetPassword, updatePassword, updateProfile } = require('../controllers/authController');
+const { register, login, logout, getMe, verifyEmail, forgotPassword, resetPassword, updatePassword, updateProfile, googleAuth, googleCallback } = require('../controllers/authController');
 const { validateRegister, validateLogin, validateForgotPassword, validateResetPassword } = require('../validators/authValidator');
 const { sendEmail } = require('../utils/email');
 const catchAsync = require('../utils/catchAsync');
 const { userOrAdmin, getTokenFromHeaders } = require('../middleware/auth');
+const { avatarUpload } = require('../middleware/upload');
 
 
 // POST /api/auth/register
@@ -32,7 +33,14 @@ router.post('/reset-password', validateResetPassword, resetPassword);
 router.put('/update-password', getTokenFromHeaders, userOrAdmin, updatePassword);
 
 // PUT /api/auth/update-profile
-router.put('/update-profile', getTokenFromHeaders, userOrAdmin, updateProfile);
+router.put('/update-profile', getTokenFromHeaders, userOrAdmin, avatarUpload, updateProfile);
+
+// Google OAuth routes
+// GET /api/auth/google - Initiate Google OAuth
+router.get('/google', googleAuth);
+
+// GET /api/auth/google/callback - Google OAuth callback
+router.get('/google/callback', googleCallback);
 
 // POST /api/auth/test-email - Test email delivery
 router.post('/test-email', catchAsync(async (req, res, next) => {

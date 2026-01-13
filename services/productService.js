@@ -225,6 +225,13 @@ class ProductService {
 
     return products;
   }
+  async getAllProductsBySlugAdmin({ slug }) {
+    const products = await Product.findOne({ slug: slug })
+      .select(" -discount -reviews -rating -for -createdAt -updatedAt")
+      .lean();
+
+    return products;
+  }
 
   async countAllProducts() {
     const count = await Product.countDocuments();

@@ -15,9 +15,10 @@ const {
   createProduct,
   editProduct,
   deleteProduct,
+  getAlllProductsBySlugAdmin,
 } = require("../controllers/productController");
 const { getTokenFromHeaders, adminOnly } = require("../middleware/auth");
-const {productImageUpload} = require("../middleware/upload");
+const { productImageUpload } = require("../middleware/upload");
 // GET /api/products - Get all products with filters
 router.get("/", getAllProducts);
 
@@ -27,6 +28,10 @@ router.get(
   getTokenFromHeaders,
   adminOnly,
   getAlllProductsAdmin
+);
+router.get(
+  "/admin/products/:slug",
+  getAlllProductsBySlugAdmin
 );
 
 router.post(

@@ -28,8 +28,11 @@ const blogImageUpload = upload.fields([
 
 const bannerImageUpload = upload.single("image");
 
+const avatarUpload = upload.single("avatar");
+
 module.exports = {
   productImageUpload,
   blogImageUpload,
   bannerImageUpload,
+  avatarUpload,
 };

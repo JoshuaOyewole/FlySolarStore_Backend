@@ -14,3 +14,4 @@ ORDER_SYSTEM_SUMMARY.md
 **/.md
 
 .env.local
+.env.example

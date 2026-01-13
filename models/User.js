@@ -26,7 +26,9 @@ const userSchema = new mongoose.Schema({
   },
   password: {
     type: String,
-    required: [true, 'Password is required'],
+    required: function() {
+      return this.channel === 'normal';
+    },
     minLength: [6, 'Password must be at least 6 characters'],
     select: false
   },
@@ -49,6 +51,18 @@ const userSchema = new mongoose.Schema({
     type: String,
     enum: ['customer', 'vendor', 'admin'],
     default: 'customer'
+  },
+  channel: {
+    type: String,
+    enum: ['normal', 'social'],
+    default: 'normal',
+    description: 'Registration channel: normal (email/password) or social (Google OAuth)'
+  },
+  googleId: {
+    type: String,
+    unique: true,
+    sparse: true,
+    description: 'Google OAuth ID for social login'
   },
   isActive: {
     type: Boolean,

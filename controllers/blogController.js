@@ -46,6 +46,8 @@ exports.getBlogBySlug = catchAsync(async (req, res) => {
   });
 });
 
+
+
 // @desc    Get blogs by category
 // @route   GET /api/blogs/category/:category
 // @access  Public

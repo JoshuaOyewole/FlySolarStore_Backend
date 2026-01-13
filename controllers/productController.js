@@ -231,6 +231,24 @@ exports.getAlllProductsAdmin = catchAsync(async (req, res) => {
     });
   }
 });
+exports.getAlllProductsBySlugAdmin = catchAsync(async (req, res) => {
+  
+  try {
+    const products = await productService.getAllProductsBySlugAdmin({
+      slug: req.params.slug,
+    });
+
+    res.status(200).json({
+      success: true,
+      data: products,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message || "Server Error",
+    });
+  }
+});
 
 exports.createProduct = catchAsync(async (req, res) => {
   try {
@@ -305,12 +323,29 @@ exports.createProduct = catchAsync(async (req, res) => {
       .replace(/\s+/g, "-")
       .replace(/[^\w\-]+/g, "");
     productData.price = parseFloat(price);
-    productData.size = size || null;
-    productData.colors = colors
-      ? JSON.stringify(colors)
-          .split(",")
-          .map((color) => color.trim())
-      : [];
+    
+    // Parse size from JSON string to array
+    if (size) {
+      try {
+        productData.size = typeof size === 'string' ? JSON.parse(size) : size;
+      } catch (e) {
+        productData.size = null;
+      }
+    } else {
+      productData.size = null;
+    }
+    
+    // Parse colors from JSON string to array
+    if (colors) {
+      try {
+        productData.colors = typeof colors === 'string' ? JSON.parse(colors) : colors;
+      } catch (e) {
+        productData.colors = [];
+      }
+    } else {
+      productData.colors = [];
+    }
+    
     productData.discount = discount ? parseFloat(discount) : 0;
     productData.category = category || null;
     productData.catelogue = catelogue || null;
@@ -391,6 +426,29 @@ exports.editProduct = catchAsync(async (req, res) => {
 
       // Clean up the temporary field
       delete productData.existingImages;
+    }
+
+    // Parse colors from JSON string to array if provided
+    if (productData.colors) {
+      try {
+        productData.colors = typeof productData.colors === 'string' 
+          ? JSON.parse(productData.colors) 
+          : productData.colors;
+      } catch (e) {
+        // If parsing fails, keep as is or set to empty array
+        console.error('Error parsing colors:', e);
+      }
+    }
+
+    // Parse sizes from JSON string to array if provided
+    if (productData.sizes) {
+      try {
+        productData.sizes = typeof productData.sizes === 'string' 
+          ? JSON.parse(productData.sizes) 
+          : productData.sizes;
+      } catch (e) {
+        console.error('Error parsing sizes:', e);
+      }
     }
 
     // Add logic to update the product using productService

@@ -9,7 +9,8 @@ const {
   editBlog,
   deleteBlog,
   getAllBlogs,
-  getAllArticles
+  getAllArticles,
+  getBlogBySlugAdmin,
 } = require("../controllers/blogController");
 
 const { adminOnly, getTokenFromHeaders } = require("../middleware/auth");
@@ -40,5 +41,6 @@ router.get("/category/:category", getBlogsByCategory);
 
 // GET /api/blogs/:slug
 router.get("/:slug", getBlogBySlug);
+
 
 module.exports = router;

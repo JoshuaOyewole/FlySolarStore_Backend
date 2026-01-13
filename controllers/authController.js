@@ -5,6 +5,15 @@ const User = require("../models/User");
 const catchAsync = require("../utils/catchAsync");
 const { sendEmail } = require("../utils/email");
 const crypto = require("crypto");
+const { OAuth2Client } = require("google-auth-library");
+
+const client = new OAuth2Client(
+  process.env.GOOGLE_CLIENT_ID,
+  process.env.GOOGLE_CLIENT_SECRET,
+  `${
+    process.env.BACKEND_URL || "http://localhost:5000"
+  }/api/auth/google/callback`
+);
 
 // Generate JWT token
 const generateToken = (id) => {
@@ -12,7 +21,6 @@ const generateToken = (id) => {
     expiresIn: process.env.JWT_EXPIRE || "7d",
   });
 };
-
 // Send token response
 const sendTokenResponse = (user, statusCode, res) => {
   const token = generateToken(user._id);
@@ -100,6 +108,7 @@ const register = catchAsync(async (req, res, next) => {
     lastName,
     email,
     password,
+    channel: req.body.channel || "normal",
   });
 
   // Generate email verification token
@@ -216,7 +225,6 @@ const logout = catchAsync(async (req, res, next) => {
 // @route   GET /api/auth/me
 // @access  Private
 const getMe = catchAsync(async (req, res, next) => {
-  console.log("Authenticated user ID:", req.user.id);
   const user = await User.findById(req.user.id).populate("addresses");
 
   res.status(200).json({
@@ -439,6 +447,48 @@ const updateProfile = catchAsync(async (req, res, next) => {
     }
   }
 
+  // Handle avatar upload if file is provided
+  if (req.file) {
+    const cloudinary = require("../config/cloudinary");
+    const streamifier = require("streamifier");
+
+    try {
+      // Delete old avatar from Cloudinary if exists
+      if (user.avatar && user.avatar.public_id) {
+        await cloudinary.uploader.destroy(user.avatar.public_id);
+      }
+
+      // Upload new avatar to Cloudinary
+      const uploadResult = await new Promise((resolve, reject) => {
+        const uploadStream = cloudinary.uploader.upload_stream(
+          {
+            folder: "avatars",
+            transformation: [
+              { width: 400, height: 400, crop: "fill", gravity: "face" },
+              { quality: "auto" },
+            ],
+          },
+          (error, result) => {
+            if (error) reject(error);
+            else resolve(result);
+          }
+        );
+        streamifier.createReadStream(req.file.buffer).pipe(uploadStream);
+      });
+
+      user.avatar = {
+        public_id: uploadResult.public_id,
+        url: uploadResult.secure_url,
+      };
+    } catch (error) {
+      console.error("Avatar upload error:", error);
+      return res.status(500).json({
+        success: false,
+        message: "Failed to upload avatar image",
+      });
+    }
+  }
+
   // Update fields
   if (firstName) user.firstName = firstName;
   if (lastName) user.lastName = lastName;
@@ -452,9 +502,116 @@ const updateProfile = catchAsync(async (req, res, next) => {
   res.status(200).json({
     success: true,
     data: {
-      user,
+      user:{
+        _id: user._id,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        email: user.email,
+        phone: user.phone,
+        dateOfBirth: user.dateOfBirth,
+        avatar: user.avatar,
+      },
     },
   });
+});
+
+// @desc    Google OAuth - Initiate
+// @route   GET /api/auth/google
+// @access  Public
+const googleAuth = catchAsync(async (req, res) => {
+  const authorizeUrl = client.generateAuthUrl({
+    access_type: "offline",
+    scope: [
+      "https://www.googleapis.com/auth/userinfo.profile",
+      "https://www.googleapis.com/auth/userinfo.email",
+    ],
+    prompt: "consent",
+  });
+
+  res.redirect(authorizeUrl);
+});
+
+// @desc    Google OAuth - Callback
+// @route   GET /api/auth/google/callback
+// @access  Public
+const googleCallback = catchAsync(async (req, res) => {
+  const { code } = req.query;
+
+  if (!code) {
+    return res.redirect(
+      `${process.env.FRONTEND_URL}/register?error=auth_failed`
+    );
+  }
+
+  const { OAuth2Client } = require("google-auth-library");
+  const client = new OAuth2Client(
+    process.env.GOOGLE_CLIENT_ID,
+    process.env.GOOGLE_CLIENT_SECRET,
+    `${
+      process.env.BACKEND_URL || "http://localhost:5000"
+    }/api/auth/google/callback`
+  );
+
+  try {
+    // Exchange code for tokens
+    const { tokens } = await client.getToken(code);
+    client.setCredentials(tokens);
+
+    // Verify and get user info
+    const ticket = await client.verifyIdToken({
+      idToken: tokens.id_token,
+      audience: process.env.GOOGLE_CLIENT_ID,
+    });
+
+    const payload = ticket.getPayload();
+    const { sub: googleId, email, given_name, family_name, picture } = payload;
+
+    // Check if user exists
+    let user = await User.findOne({ $or: [{ email }, { googleId }] });
+
+    if (user) {
+      // Update googleId if not set
+      if (!user.googleId) {
+        user.googleId = googleId;
+        user.channel = "social";
+        await user.save();
+      }
+    } else {
+      // Create new user
+      user = await User.create({
+        firstName: given_name || "User",
+        lastName: family_name || "",
+        email,
+        googleId,
+        channel: "social",
+        password: crypto.randomBytes(32).toString("hex"), // Random password for social accounts
+        isEmailVerified: true,
+        avatar: picture ? { url: picture } : undefined,
+      });
+    }
+
+    // Update last login
+    user.lastLogin = new Date();
+    await user.save();
+
+    // Generate JWT token
+    const token = generateToken(user._id);
+
+    // Set cookie
+    res.cookie("token", token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+      path: "/",
+    });
+
+    // Redirect to frontend
+    res.redirect(`${process.env.FRONTEND_URL}/?auth=success`);
+  } catch (error) {
+    console.error("Google OAuth error:", error);
+    res.redirect(`${process.env.FRONTEND_URL}/register?error=auth_failed`);
+  }
 });
 
 module.exports = {
@@ -467,4 +624,6 @@ module.exports = {
   resetPassword,
   updatePassword,
   updateProfile,
+  googleAuth,
+  googleCallback,
 };
