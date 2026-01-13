@@ -79,8 +79,9 @@ const productSchema = new mongoose.Schema(
       max: [5, "Rating cannot exceed 5"],
     },
     catelogue: {
-      demo: String,
       type: String,
+      enum: ['flash-deals', 'just-for-you', 'new-arrivals', 'featured-grid'],
+      default: null,
     },
     /*   shop: {
     type: mongoose.Schema.Types.ObjectId,

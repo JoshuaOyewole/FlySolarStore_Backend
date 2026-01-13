@@ -112,7 +112,7 @@ class ProductService {
     return product;
   }
 
-  async getRelatedProducts(productId, category, limit = 8) {
+  async getRelatedProducts(productId, category, limit = 4) {
     const products = await Product.find({
       _id: { $ne: productId },
       category: category,

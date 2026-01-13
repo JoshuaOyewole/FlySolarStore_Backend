@@ -15,3 +15,6 @@ ORDER_SYSTEM_SUMMARY.md
 
 .env.local
 .env.example
+
+
+scripts/*.js

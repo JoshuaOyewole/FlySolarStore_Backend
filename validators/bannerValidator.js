@@ -9,11 +9,6 @@ const validateBanner = [
     .isLength({ max: 100 })
     .withMessage('Title cannot exceed 100 characters'),
   
-  body('imgUrl')
-    .trim()
-    .notEmpty()
-    .withMessage('Image URL is required'),
-  
   body('description')
     .optional()
     .trim(),
@@ -26,46 +21,23 @@ const validateBanner = [
     .optional()
     .trim(),
   
-  body('backgroundColor')
+  body('type')
     .optional()
     .trim()
-    .matches(/^#[0-9A-Fa-f]{6}$/)
-    .withMessage('Background color must be a valid hex color'),
-  
-  body('textColor')
-    .optional()
-    .trim()
-    .matches(/^#[0-9A-Fa-f]{6}$/)
-    .withMessage('Text color must be a valid hex color'),
-  
-  body('order')
-    .optional()
-    .isInt({ min: 0 })
-    .withMessage('Order must be a positive integer'),
-  
-  body('targetAudience')
-    .optional()
-    .trim()
-    .isIn(['all', 'new-users', 'premium-users', 'returning-users'])
-    .withMessage('Invalid target audience'),
-  
-  body('isActive')
-    .optional()
-    .isBoolean()
-    .withMessage('isActive must be a boolean'),
-  
-  body('isCurrentlyActive')
-    .optional()
-    .isBoolean()
-    .withMessage('isCurrentlyActive must be a boolean'),
-  
-  body('startDate')
-    .optional()
-    .isISO8601()
-    .withMessage('Start date must be a valid date'),
+    .isIn(['hero', 'promo', 'category'])
+    .withMessage('Type must be one of: hero, promo, category'),
 
   // Validation result handler
   (req, res, next) => {
+    // Check for unexpected fields
+    const allowedFields = ['title', 'description', 'buttonText', 'buttonLink', 'type'];
+    const bodyFields = Object.keys(req.body);
+    const unexpectedFields = bodyFields.filter(field => !allowedFields.includes(field));
+    
+    if (unexpectedFields.length > 0) {
+      return next(new AppError(`Unexpected fields: ${unexpectedFields.join(', ')}`, 400));
+    }
+
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
       const errorMessages = errors.array().map(err => err.msg).join(', ');
@@ -84,12 +56,6 @@ const validateBannerUpdate = [
     .isLength({ max: 100 })
     .withMessage('Title cannot exceed 100 characters'),
   
-  body('imgUrl')
-    .optional()
-    .trim()
-    .notEmpty()
-    .withMessage('Image URL cannot be empty'),
-  
   body('description')
     .optional()
     .trim(),
@@ -102,46 +68,23 @@ const validateBannerUpdate = [
     .optional()
     .trim(),
   
-  body('backgroundColor')
+  body('type')
     .optional()
     .trim()
-    .matches(/^#[0-9A-Fa-f]{6}$/)
-    .withMessage('Background color must be a valid hex color'),
-  
-  body('textColor')
-    .optional()
-    .trim()
-    .matches(/^#[0-9A-Fa-f]{6}$/)
-    .withMessage('Text color must be a valid hex color'),
-  
-  body('order')
-    .optional()
-    .isInt({ min: 0 })
-    .withMessage('Order must be a positive integer'),
-  
-  body('targetAudience')
-    .optional()
-    .trim()
-    .isIn(['all', 'new-users', 'premium-users', 'returning-users'])
-    .withMessage('Invalid target audience'),
-  
-  body('isActive')
-    .optional()
-    .isBoolean()
-    .withMessage('isActive must be a boolean'),
-  
-  body('isCurrentlyActive')
-    .optional()
-    .isBoolean()
-    .withMessage('isCurrentlyActive must be a boolean'),
-  
-  body('startDate')
-    .optional()
-    .isISO8601()
-    .withMessage('Start date must be a valid date'),
+    .isIn(['hero', 'promo', 'category'])
+    .withMessage('Type must be one of: hero, promo, category'),
 
   // Validation result handler
   (req, res, next) => {
+    // Check for unexpected fields
+    const allowedFields = ['title', 'description', 'buttonText', 'buttonLink', 'type'];
+    const bodyFields = Object.keys(req.body);
+    const unexpectedFields = bodyFields.filter(field => !allowedFields.includes(field));
+    
+    if (unexpectedFields.length > 0) {
+      return next(new AppError(`Unexpected fields: ${unexpectedFields.join(', ')}`, 400));
+    }
+
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
       const errorMessages = errors.array().map(err => err.msg).join(', ');
