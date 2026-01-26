@@ -12,7 +12,7 @@ const client = new OAuth2Client(
   process.env.GOOGLE_CLIENT_SECRET,
   `${
     process.env.BACKEND_URL || "http://localhost:5000"
-  }/api/auth/google/callback`
+  }/api/auth/google/callback`,
 );
 
 // Generate JWT token
@@ -37,10 +37,10 @@ const sendTokenResponse = (user, statusCode, res) => {
 
   res.cookie("token", token, {
     httpOnly: true,
-  /*   domain:
+    domain:
       process.env.NODE_ENV === "production"
         ? ".flysolarstore.com"
-        : "undefined", */
+        : "undefined",
     secure: process.env.NODE_ENV === "production" ? true : false,
     sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
     maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
@@ -475,7 +475,7 @@ const updateProfile = catchAsync(async (req, res, next) => {
           (error, result) => {
             if (error) reject(error);
             else resolve(result);
-          }
+          },
         );
         streamifier.createReadStream(req.file.buffer).pipe(uploadStream);
       });
@@ -543,7 +543,7 @@ const googleCallback = catchAsync(async (req, res) => {
 
   if (!code) {
     return res.redirect(
-      `${process.env.FRONTEND_URL}/register?error=auth_failed`
+      `${process.env.FRONTEND_URL}/register?error=auth_failed`,
     );
   }
 
@@ -553,7 +553,7 @@ const googleCallback = catchAsync(async (req, res) => {
     process.env.GOOGLE_CLIENT_SECRET,
     `${
       process.env.BACKEND_URL || "http://localhost:5000"
-    }/api/auth/google/callback`
+    }/api/auth/google/callback`,
   );
 
   try {
