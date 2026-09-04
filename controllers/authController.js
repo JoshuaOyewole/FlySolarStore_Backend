@@ -184,21 +184,26 @@ const login = catchAsync(async (req, res) => {
 
   // Check password
   const isPasswordMatch = await user.comparePassword(password);
-
   if (!isPasswordMatch) {
+    return res.status(401).json({
+      success: false,
+      message: "Invalid credentials",
+    });
+  }
+
+  if (isPasswordMatch) {
     // Increment login attempts
     user.loginAttempts += 1;
 
     // Lock account after 5 failed attempts
     if (user.loginAttempts >= 5) {
       user.lockUntil = Date.now() + 30 * 60 * 1000; // 30 minutes
+      return res.status(423).json({
+        success: false,
+        message: "Account is temporarily locked due to too many failed login attempts",
+      });
     }
-
-    await user.save();
-    return res.status(401).json({
-      success: false,
-      message: "Invalid credentials",
-    });
+  
   }
 
   // Reset login attempts on successful login

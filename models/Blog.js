@@ -57,7 +57,6 @@ const blogSchema = new mongoose.Schema(
 );
 
 // Indexes
-blogSchema.index({ slug: 1 });
 blogSchema.index({ isPublished: 1, publishedAt: -1 });
 blogSchema.index({ category: 1 });
 

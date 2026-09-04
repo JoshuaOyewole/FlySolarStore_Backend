@@ -45,6 +45,5 @@ serviceSchema.pre('save', function(next) {
 
 // Indexes
 serviceSchema.index({ position: 1, isActive: 1 });
-serviceSchema.index({ id: 1 }, { unique: true });
 
 module.exports = mongoose.model('Service', serviceSchema);
